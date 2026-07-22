@@ -1,5 +1,5 @@
 /* ================================================================
-   JĀTHAKA ENGINE  —  pure-browser Vedic horoscope computation
+   JĀTHAKA ENGINE  -  pure-browser Vedic horoscope computation
    Lahiri (Chitrapaksha) sidereal · mean-node Rahu · whole-sign houses
    Astronomy from astronomy-engine (Don Cross, MIT). Zero network, zero AI.
    Validated arc-minute against pyswisseph.
@@ -250,32 +250,32 @@ function detectYogas(chart){
   const moonH=house(1);
   const kendraFromMoon=i=>{const d=((P[i].sign-P[1].sign)%12+12)%12+1;return [1,4,7,10].includes(d);};
   // Gajakesari
-  if(kendraFromMoon(4)) out.push(["Gajakesari Yoga","Jupiter in a kendra (1/4/7/10) from the Moon — confers intelligence, respect, and lasting reputation."]);
+  if(kendraFromMoon(4)) out.push(["Gajakesari Yoga","Jupiter in a kendra (1/4/7/10) from the Moon - confers intelligence, respect, and lasting reputation."]);
   // Budhaditya
-  if(P[0].sign===P[3].sign) out.push(["Budhāditya Yoga","Sun and Mercury conjoined — sharp intellect, communication skill, administrative ability."]);
+  if(P[0].sign===P[3].sign) out.push(["Budhāditya Yoga","Sun and Mercury conjoined - sharp intellect, communication skill, administrative ability."]);
   // Chandra-Mangala
-  if(P[1].sign===P[2].sign) out.push(["Chandra-Maṅgala Yoga","Moon with Mars — drive, enterprise, and capacity to generate wealth through effort."]);
+  if(P[1].sign===P[2].sign) out.push(["Chandra-Maṅgala Yoga","Moon with Mars - drive, enterprise, and capacity to generate wealth through effort."]);
   // Anapha / Sunapha / Durudhara (from Moon, 2nd/12th excluding Sun)
   const around=[]; for(let i=2;i<=6;i++){if(i===0)continue; const d=((P[i].sign-P[1].sign)%12+12)%12+1; if(d===2)around.push('2'); if(d===12)around.push('12');}
-  if(around.includes('12')&&around.includes('2')) out.push(["Durudhara Yoga","Planets flanking the Moon on both sides — material comfort and a balanced, capable temperament."]);
-  else if(around.includes('2')) out.push(["Sunapha Yoga","A planet in the 2nd from the Moon — self-earned wealth and steady standing."]);
-  else if(around.includes('12')) out.push(["Anapha Yoga","A planet in the 12th from the Moon — well-formed character, health, and a dignified nature."]);
+  if(around.includes('12')&&around.includes('2')) out.push(["Durudhara Yoga","Planets flanking the Moon on both sides - material comfort and a balanced, capable temperament."]);
+  else if(around.includes('2')) out.push(["Sunapha Yoga","A planet in the 2nd from the Moon - self-earned wealth and steady standing."]);
+  else if(around.includes('12')) out.push(["Anapha Yoga","A planet in the 12th from the Moon - well-formed character, health, and a dignified nature."]);
   // Kemadruma check (nothing in 2/12 from Moon, no kendra from moon, no conjunction)
   const anyWithMoon=P.some((p,i)=>i>=0&&i<=6&&i!==1&&p.sign===P[1].sign);
-  if(around.length===0&&!anyWithMoon){ out.push(["Kemadruma Yoga (caution)","Moon isolated with no planets adjacent — indicates need for self-reliance; often cancelled by kendra support."]);}
+  if(around.length===0&&!anyWithMoon){ out.push(["Kemadruma Yoga (caution)","Moon isolated with no planets adjacent - indicates need for self-reliance; often cancelled by kendra support."]);}
   // Kendra-trikona / Raja hints: lords of trikona (1,5,9) + kendra association simplified
   // Neechabhanga hint
-  P.forEach((p)=>{ if(p.dig&&p.dig.cls==="exalt"&&p.i<=6) out.push([`${PL_SANS[p.i]} exalted`,`${p.name} occupies its sign of exaltation in ${SIGNS[p.sign]} — a strong, well-placed graha in the chart.`]);});
-  // Chamara / Malavya etc (Pancha Mahapurusha) — planet in own/exalt in kendra
+  P.forEach((p)=>{ if(p.dig&&p.dig.cls==="exalt"&&p.i<=6) out.push([`${PL_SANS[p.i]} exalted`,`${p.name} occupies its sign of exaltation in ${SIGNS[p.sign]} - a strong, well-placed graha in the chart.`]);});
+  // Chamara / Malavya etc (Pancha Mahapurusha) - planet in own/exalt in kendra
   const MPY={2:"Ruchaka",4:"Hamsa",5:"Malavya",3:"Bhadra",6:"Shasha"};
   [2,4,5,3,6].forEach(pi=>{ const p=P[pi]; if([1,4,7,10].includes(p.house)&&p.dig&&(p.dig.cls==="own"||p.dig.cls==="exalt")){
-    out.push([`${MPY[pi]} Mahāpuruṣa Yoga`,`${p.name} strong (own/exalted) in a kendra — a Pancha-Mahapurusha combination granting distinguished ${pi===2?"courage and leadership":pi===4?"wisdom and virtue":pi===5?"charm, comfort and artistry":pi===3?"intellect and eloquence":"discipline and endurance"}.`]);
+    out.push([`${MPY[pi]} Mahāpuruṣa Yoga`,`${p.name} strong (own/exalted) in a kendra - a Pancha-Mahapurusha combination granting distinguished ${pi===2?"courage and leadership":pi===4?"wisdom and virtue":pi===5?"charm, comfort and artistry":pi===3?"intellect and eloquence":"discipline and endurance"}.`]);
   }});
   // Kala Sarpa (all planets between Rahu-Ketu axis)
   const rl=P[7].lon, kl=P[8].lon;
   let allBetween=true, side=null;
   for(let i=0;i<7;i++){ const x=norm360(P[i].lon-rl); if(side===null)side=x<180; else if((x<180)!==side){allBetween=false;break;} }
-  if(allBetween) out.push(["Kāla-Sarpa Yoga","All seven planets fall on one side of the Rahu-Ketu axis — intensifies the life's karmic themes; effects vary by house."]);
+  if(allBetween) out.push(["Kāla-Sarpa Yoga","All seven planets fall on one side of the Rahu-Ketu axis - intensifies the life's karmic themes; effects vary by house."]);
   return out;
 }
 

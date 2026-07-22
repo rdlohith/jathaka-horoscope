@@ -1,7 +1,7 @@
-# Jāthaka — Vedic Horoscope Calculator 🕉
+# Jāthaka - Vedic Horoscope Calculator 🕉
 
 A single-page, **fully offline** Vedic (Jyotiṣa) horoscope calculator. Enter a birth date, time and
-place and it computes a complete **28-section Janma Kundali** — entirely in your browser, with **no
+place and it computes a complete **28-section Janma Kundali** - entirely in your browser, with **no
 server, no AI, and no network calls at runtime**.
 
 **Live site:** _enable GitHub Pages, then this becomes `https://<user>.github.io/<repo>/`_
@@ -20,8 +20,8 @@ server, no AI, and no network calls at runtime**.
 ## Accuracy
 
 The astronomy comes from **[astronomy-engine](https://github.com/cosinekitty/astronomy)** (Don Cross,
-MIT) — Swiss-Ephemeris-grade positions. The Lahiri ayanāṁśa model reproduces the Swiss Ephemeris to
-under 0.001 arc-second across 1900–2100, and the engine was validated arc-minute against `pyswisseph`.
+MIT) - Swiss-Ephemeris-grade positions. The Lahiri ayanāṁśa model reproduces the Swiss Ephemeris to
+under 0.001 arc-second across 1900-2100, and the engine was validated arc-minute against `pyswisseph`.
 
 ## Build
 
@@ -37,5 +37,5 @@ sections), `src/ui.js` (rendering + UI), `src/astronomy.browser.min.js` (astrono
 ## Credits & licence
 
 Astronomy by **astronomy-engine** © Don Cross, MIT. This project is provided for education and cultural
-interest. Vedic astrology is a traditional interpretive system — the astronomy is exact, but the
+interest. Vedic astrology is a traditional interpretive system - the astronomy is exact, but the
 readings are offered for reflection, not as prediction or professional advice.
