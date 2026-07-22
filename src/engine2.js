@@ -1,5 +1,5 @@
 /* ================================================================
-   JĀTHAKA ENGINE — extended sections (panchanga, jaimini, shadbala,
+   JĀTHAKA ENGINE - extended sections (panchanga, jaimini, shadbala,
    doshas, gochara, bhava chalit). Extends window.JATHAKA.
    ================================================================ */
 (function(){
@@ -149,7 +149,7 @@ function upagrahas(chart){
   const list=[["Dhuma",dhuma,"Point of dissatisfaction / detachment"],
     ["Vyatipata",vyatipata,"Caution / calamity-averting point"],
     ["Parivesha",parivesha,"Expenditure / spiritual point"],
-    ["Indrachapa",indrachapa,"Auspicious 'rainbow' point — favourable"],
+    ["Indrachapa",indrachapa,"Auspicious 'rainbow' point - favourable"],
     ["Upaketu",upaketu,"Point of sudden change"]];
   return list.map(([name,lon,eff])=>({name,lon,sign:signOf(lon),
     house:((signOf(lon)-chart.ascSign)%12+12)%12+1,effect:eff}));
@@ -247,28 +247,28 @@ function doshas(chart){
   const marsOwnEx=SIGN_LORD[P[2].sign]===2||(EXALT[2]&&EXALT[2][0]===P[2].sign);
   const refs=[fromL?`${marsH}th from Lagna`:'',fromM?`${marsFromMoon}th from Moon`:'',fromV?`${marsFromVenus}th from Venus`:''].filter(Boolean).join(', ');
   out.push({name:"Manglik / Kuja Dosha",status:manglik?((marsOwnEx||(!fromL&&!fromM))?"PRESENT (mild)":"PRESENT"):"Absent",
-    detail:manglik?`Mars sits ${refs}.${marsOwnEx?" Softened — Mars in its own/exalted sign.":(!fromL&&!fromM)?" Mild — a Venus-reckoned form, mainly for matching.":" Match with a chart that also carries it; Hanuman worship."}`:"Mars avoids the Manglik houses (1,2,4,7,8,12) from Lagna, Moon and Venus."});
+    detail:manglik?`Mars sits ${refs}.${marsOwnEx?" Softened - Mars in its own/exalted sign.":(!fromL&&!fromM)?" Mild - a Venus-reckoned form, mainly for matching.":" Match with a chart that also carries it; Hanuman worship."}`:"Mars avoids the Manglik houses (1,2,4,7,8,12) from Lagna, Moon and Venus."});
   // Pitru: Sun/Moon with Rahu/Ketu, or Sun+Saturn afflicted
   const pitru=P[1].sign===P[8].sign||P[1].sign===P[7].sign||P[0].sign===P[8].sign||P[0].sign===P[7].sign;
   out.push({name:"Pitru Dosha",status:pitru?"Present":"Absent",
-    detail:pitru?"Luminary conjunct a node — an ancestral-karma signature; remedy: Tarpana / Shraddha.":"No node-luminary affliction of the classic type."});
+    detail:pitru?"Luminary conjunct a node - an ancestral-karma signature; remedy: Tarpana / Shraddha.":"No node-luminary affliction of the classic type."});
   // Kala Sarpa
   const rl=P[7].lon; let side=null,ksp=true;
   for(let i=0;i<7;i++){const x=norm(P[i].lon-rl);if(side===null)side=x<180;else if((x<180)!==side){ksp=false;break;}}
   out.push({name:"Kala Sarpa Dosha",status:ksp?"PRESENT":"ABSENT",
-    detail:ksp?"All seven planets fall on one side of the Rahu-Ketu axis.":"Planets fall on both sides of the Rahu-Ketu axis — this feared dosha does NOT apply."});
+    detail:ksp?"All seven planets fall on one side of the Rahu-Ketu axis.":"Planets fall on both sides of the Rahu-Ketu axis - this feared dosha does NOT apply."});
   // Kemadruma
   const around=[];for(let i=0;i<7;i++){if(i===1)continue;const d=((P[i].sign-P[1].sign)%12+12)%12+1;if(d===2||d===12)around.push(d);}
   const withMoon=P.some((p,i)=>i>=0&&i<=6&&i!==1&&p.sign===P[1].sign);
   const kema=around.length===0&&!withMoon;
   const kendraOcc=P.some(p=>[4,7,10].includes(((p.sign-P[1].sign)%12+12)%12+1)&&p.i!==1&&p.i<=6);
   out.push({name:"Kemadruma Dosha",status:kema?"PRESENT":"Absent",
-    detail:kema?(kendraOcc?"Present but cushioned by planets in a kendra from the Moon.":"No planets flank the Moon — the 'lonely Moon'."):"A planet flanks the Moon (2nd/12th) or joins it — Kemadruma is cancelled."});
+    detail:kema?(kendraOcc?"Present but cushioned by planets in a kendra from the Moon.":"No planets flank the Moon - the 'lonely Moon'."):"A planet flanks the Moon (2nd/12th) or joins it - Kemadruma is cancelled."});
   // Graha Yuddha
   let war=null;
   for(let i=2;i<=6;i++)for(let j=i+1;j<=6;j++)if(i!==0&&arcdist(P[i].lon,P[j].lon)<1&&P[i].sign===P[j].sign)war=[PLANETS[P[i].i],PLANETS[P[j].i]];
   out.push({name:"Graha Yuddha (planetary war)",status:war?"Present":"Absent",
-    detail:war?`${war[0]} and ${war[1]} within 1° — a planetary war.`:"No two planets within 1° — no planetary war."});
+    detail:war?`${war[0]} and ${war[1]} within 1° - a planetary war.`:"No two planets within 1° - no planetary war."});
   return out;
 }
 
@@ -322,7 +322,7 @@ function gochara(chart,fromYear,toYear){
     if(jFav)note=note?note+"; Jupiter favourable":(jFromLagna===1?"Jupiter on Lagna":"Jupiter favourable");
     rows.push({year:y,age:y-dt.y,dasha:dashaAt(jd),
       sat:{sign:sat,h:sFromMoon},jup:{sign:jup,h:jFromMoon},rahu:{sign:rah,h:((rah-moonSign)%12+12)%12+1},
-      note:note||"—",fav:jFav,ss:sFromMoon===1||sFromMoon===12||sFromMoon===2});
+      note:note||"-",fav:jFav,ss:sFromMoon===1||sFromMoon===12||sFromMoon===2});
   }
   return rows;
 }
