@@ -384,8 +384,61 @@ function bhavaChalit(chart){
   return {cusps,mc,placements,ascSign:chart.ascSign};
 }
 
+/* ---------------- Dasha-based event timing (replaces generic age bands) ---------------- */
+function fmtAge(a){const yr=Math.floor(a);const mo=Math.round((a-yr)*12);return mo>0?`${yr} yr ${mo} mo`:`${yr} yr`;}
+function dashaWindows(chart,triggers,minAge,maxAge){
+  const vim=J.vimshottari(chart.planets[1].lon,chart.jd);const wins=[];
+  vim.list.forEach(md=>{md.ad.forEach(a=>{
+    const sA=(a.st-chart.jd)/YEAR, eA=(a.en-chart.jd)/YEAR;
+    if(eA<minAge||sA>maxAge)return;
+    if(triggers.includes(md.lord)||triggers.includes(a.lord))
+      wins.push({st:a.st,en:a.en,startAge:Math.max(sA,minAge),endAge:eA,md:md.lord,ad:a.lord});
+  });});
+  // merge consecutive windows that touch
+  const merged=[];wins.forEach(w=>{const last=merged[merged.length-1];
+    if(last&&w.startAge-last.endAge<0.1&&last.md===w.md)last.endAge=w.endAge;else merged.push({...w});});
+  return merged;
+}
+function doubleTransitOK(chart,win){ // Jupiter or Saturn transiting/aspecting the 7th at the window mid-point
+  const mid=(win.st+win.en)/2, asc=chart.ascSign, h7=(asc+6)%12;
+  const jup=signOf(transitLon(4,mid)), sat=signOf(transitLon(6,mid));
+  const asp=(from,specials)=>specials.some(a=>((from+a-1)%12)===h7);
+  const jupHits=jup===h7||asp(jup,[5,7,9]);
+  const satHits=sat===h7||asp(sat,[3,7,10]);
+  return jupHits||satHits;
+}
+function marriageTiming(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l7=SIGN_LORD[(asc+6)%12];
+  const ck=J.charaKarakas(P); const dk=ck[6].i;
+  const jm=jaimini(chart); const ulLord=SIGN_LORD[jm.UL];
+  const male=(chart.input&&chart.input.gender)!=='female';
+  const kaaraka=male?5:4; // Venus (male) / Jupiter (female)
+  const occ7=P.filter(p=>p.house===7&&p.i<7).map(p=>p.i);
+  const asp7=aspects(chart).filter(a=>a.i<7&&a.aspects.includes(7)).map(a=>a.i);
+  const triggers=[...new Set([l7,dk,ulLord,kaaraka,...occ7,...asp7])].filter(x=>x<9);
+  let wins=dashaWindows(chart,triggers,18,48);
+  wins.forEach(w=>w.dt=doubleTransitOK(chart,w));
+  const strong=wins.filter(w=>w.dt);
+  const chosen=(strong.length?strong:wins).slice(0,3);
+  // spouse from 7th lord in D9
+  const l7d9=X.vargaSign(P[l7].lon,9);
+  return {windows:chosen.map(w=>({label:`${fmtAge(w.startAge)} - ${fmtAge(w.endAge)}`,
+    dasha:`${PLANETS[w.md]}-${PLANETS[w.ad]}`,dt:w.dt})),
+    l7,dk,kaaraka,male,spouseSign:l7d9,delayed:chosen.length&&chosen[0].startAge>30};
+}
+function careerTiming(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l10=SIGN_LORD[(asc+9)%12];
+  const ck=J.charaKarakas(P); const amk=ck[1].i; // Amatyakaraka
+  const occ10=P.filter(p=>p.house===10&&p.i<7).map(p=>p.i);
+  const triggers=[...new Set([l10,amk,...occ10])].filter(x=>x<9);
+  const wins=dashaWindows(chart,triggers,20,55).slice(0,3);
+  return {windows:wins.map(w=>({label:`${fmtAge(w.startAge)} - ${fmtAge(w.endAge)}`,dasha:`${PLANETS[w.md]}-${PLANETS[w.ad]}`})),l10,amk};
+}
+
 /* expose */
 Object.assign(J,{panchanga,avakhada,functionalNature,aspects,avasthas,compoundRel,jaimini,ISHTA_DEV,
   upagrahas,gulika,sunEvents,shadbala,doshas,sadeSati,gochara,nearTerm,bhavaChalit,transitLon,ownsHouses,
-  NAISARGIKA,REQ});
+  marriageTiming,careerTiming,NAISARGIKA,REQ});
 })();
