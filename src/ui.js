@@ -112,6 +112,7 @@ function renderShowcase(){
     const c=CELEBS.find(x=>x[0]===b.dataset.name);if(!c)return;
     $('#name').value=c[0];$('#dob').value=c[2];$('#tob').value=c[3];$('#gender').value=c[1]==='F'?'female':'male';
     placeInput.value=c[4];$('#lat').value=c[5];$('#lon').value=c[6];$('#tz').value=c[7];
+    selectedZone=zoneForCity((c[4].split(',')[0]||'').trim(),c[4]);
     $('#placeHint').textContent=`✓ ${c[5].toFixed(4)}°  ${c[6].toFixed(4)}°  ·  UTC${c[7]>=0?'+':''}${c[7]}${c[3]==='12:00'?'  · time approx (noon)':''}`;
     doCompute();
   }));
@@ -121,11 +122,21 @@ function renderShowcase(){
 const LS = {get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
   del(k){try{localStorage.removeItem(k);}catch(e){}}};
-async function hashPw(u,p){
-  try{const data=new TextEncoder().encode('jathaka::'+u+'::'+p);
-    const h=await crypto.subtle.digest('SHA-256',data);
-    return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('');
-  }catch(e){let h=5381;const s='jathaka::'+u+'::'+p;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return 'f'+h.toString(16);}
+function randHex(n){const a=new Uint8Array(n);
+  if(typeof crypto!=='undefined'&&crypto.getRandomValues)crypto.getRandomValues(a);
+  else for(let i=0;i<n;i++)a[i]=Math.floor(Math.random()*256);
+  return [...a].map(b=>b.toString(16).padStart(2,'0')).join('');}
+/* PBKDF2 (100k iterations, SHA-256, per-user random salt). Falls back to a labelled
+   weaker hash only on non-secure contexts where crypto.subtle is unavailable. */
+async function hashPw(pass,saltHex){
+  if(typeof crypto!=='undefined'&&crypto.subtle&&crypto.subtle.deriveBits){
+    const salt=Uint8Array.from(saltHex.match(/../g).map(h=>parseInt(h,16)));
+    const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveBits']);
+    const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},key,256);
+    return {algo:'pbkdf2',hash:[...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('')};
+  }
+  let h=5381;const s=saltHex+'::'+pass;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;
+  return {algo:'weak',hash:'w'+h.toString(16)};
 }
 let CURRENT_USER=null;
 function users(){return LS.get('jathaka-users')||{};}
@@ -138,6 +149,9 @@ function enterApp(user){
   else{badge.style.display='none';$('#history').style.display='none';}
 }
 function initLogin(){
+  // a shared ?c= link opens straight into the chart (as guest)
+  try{const cs=new URLSearchParams(location.search).get('c');
+    if(cs){const o=decodeChart(cs);if(o){enterApp(null);if(applyShared(o))doCompute();return;}}}catch(e){}
   const remembered=LS.get('jathaka-session');
   // tabs
   $$('.auth-tab').forEach(t=>t.addEventListener('click',()=>{
@@ -154,18 +168,27 @@ function initLogin(){
     const mode=$('#authMode').value;
     if(u.length<3){err.textContent='Username must be at least 3 characters.';return;}
     if(p.length<4){err.textContent='Password must be at least 4 characters.';return;}
-    const db=users(); const ph=await hashPw(u,p);
+    const db=users();
     if(mode==='signup'){
       if(db[u]){err.textContent='That username already exists on this device. Try signing in.';return;}
-      db[u]={pw:ph,charts:[]};LS.set('jathaka-users',db);
+      const salt=randHex(16);const {hash,algo}=await hashPw(p,salt);
+      db[u]={algo,salt,pw:hash,sessionToken:randHex(24),charts:[]};LS.set('jathaka-users',db);
     }else{
-      if(!db[u]){err.textContent='No account with that username on this device.';return;}
-      if(db[u].pw!==ph){err.textContent='Incorrect password.';return;}
+      const rec=db[u];
+      if(!rec){err.textContent='No account with that username on this device.';return;}
+      const {hash}=await hashPw(p,rec.salt||'jathaka::'+u);
+      if(hash!==rec.pw){err.textContent='Incorrect password.';return;}
+      if(!rec.sessionToken){rec.sessionToken=randHex(24);LS.set('jathaka-users',db);}
     }
-    LS.set('jathaka-session',u);enterApp(u);
+    const rec=users()[u];
+    LS.set('jathaka-session',{user:u,token:rec.sessionToken});enterApp(u);
   });
   $('#logoutBtn').addEventListener('click',()=>{LS.del('jathaka-session');location.reload();});
-  if(remembered&&users()[remembered])enterApp(remembered);
+  // verify the stored session TOKEN, not just the username (prevents session bypass)
+  if(remembered&&remembered.user&&remembered.token){
+    const rec=users()[remembered.user];
+    if(rec&&rec.sessionToken===remembered.token)enterApp(remembered.user);
+  }
 }
 function saveChartForUser(input){
   if(!CURRENT_USER)return;const db=users();const u=db[CURRENT_USER];if(!u)return;
@@ -178,9 +201,13 @@ function renderHistory(){
   const box=$('#history');if(!box)return;
   const db=users();const u=CURRENT_USER&&db[CURRENT_USER];
   const charts=(u&&u.charts)||[];
-  if(!charts.length){box.innerHTML='<div class="hist-empty">No saved charts yet - cast one and it will appear here.</div>';return;}
-  box.innerHTML='<div class="hist-title">Your saved charts</div>'+charts.map((c,i)=>
+  const toolbar='<div class="hist-title">Your saved charts</div><div class="hist-actions">'+
+    '<button class="mini-btn" id="expBtn" type="button">⤓ Export</button>'+
+    '<label class="mini-btn" for="impFile">⤒ Import<input type="file" id="impFile" accept="application/json" hidden></label></div>';
+  if(!charts.length){box.innerHTML=toolbar+'<div class="hist-empty">No saved charts yet - cast one and it will appear here.</div>';wireBackup(charts);return;}
+  box.innerHTML=toolbar+charts.map((c,i)=>
     `<button class="hist-item" data-i="${i}"><b>${esc(c.name)}</b><small>${esc(c.place)} · ${c.dob}</small></button>`).join('');
+  wireBackup(charts);
   box.querySelectorAll('.hist-item').forEach(b=>b.addEventListener('click',()=>{
     const c=charts[+b.dataset.i];const[y,mo,d]=c.dob.split('-');
     $('#name').value=c.name;$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -189,6 +216,57 @@ function renderHistory(){
     $('#placeHint').textContent=`✓ ${(+c.lat).toFixed(4)}°  ${(+c.lon).toFixed(4)}°  ·  UTC${c.tz>=0?'+':''}${c.tz}`;
     doCompute();}));
 }
+function wireBackup(charts){
+  const exp=$('#expBtn');if(exp)exp.addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify(charts,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jathaka-charts.json';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+  const imp=$('#impFile');if(imp)imp.addEventListener('change',ev=>{
+    const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{const arr=JSON.parse(r.result);if(!Array.isArray(arr))throw 0;
+      const db=users();const u=db[CURRENT_USER];if(!u)return;u.charts=u.charts||[];
+      const seen=new Set(u.charts.map(c=>c.name+'|'+c.dob));let added=0;
+      arr.forEach(c=>{if(c&&c.name&&c.dob&&c.lat!=null&&c.lon!=null&&!seen.has(c.name+'|'+c.dob)){u.charts.push(c);seen.add(c.name+'|'+c.dob);added++;}});
+      u.charts=u.charts.slice(0,50);LS.set('jathaka-users',db);renderHistory();
+      alert(added?`Imported ${added} chart${added>1?'s':''}.`:'No new charts to import.');
+    }catch(e){alert('Could not import - the file is not a valid Jathaka charts export.');}};
+    r.readAsText(f);});
+}
+
+/* ======================= DST-aware timezone (offline, via built-in Intl) ======================= */
+const US_ZONE={'New York':'America/New_York','Jersey City':'America/New_York','Edison':'America/New_York','Chicago':'America/Chicago','Houston':'America/Chicago','Dallas':'America/Chicago','Austin':'America/Chicago','Atlanta':'America/New_York','Boston':'America/New_York','Washington':'America/New_York','Seattle':'America/Los_Angeles','San Francisco':'America/Los_Angeles','San Jose':'America/Los_Angeles','Los Angeles':'America/Los_Angeles','Fremont':'America/Los_Angeles','Toronto':'America/Toronto','Vancouver':'America/Vancouver'};
+const COUNTRY_ZONE={'India':'Asia/Kolkata','Sri Lanka':'Asia/Colombo','Nepal':'Asia/Kathmandu','Bangladesh':'Asia/Dhaka','Pakistan':'Asia/Karachi','Afghanistan':'Asia/Kabul','UAE':'Asia/Dubai','Qatar':'Asia/Qatar','Saudi Arabia':'Asia/Riyadh','Oman':'Asia/Muscat','Singapore':'Asia/Singapore','Malaysia':'Asia/Kuala_Lumpur','Thailand':'Asia/Bangkok','United Kingdom':'Europe/London','France':'Europe/Paris','Germany':'Europe/Berlin','Switzerland':'Europe/Zurich','Italy':'Europe/Rome','Netherlands':'Europe/Amsterdam','Russia':'Europe/Moscow','Japan':'Asia/Tokyo','Hong Kong':'Asia/Hong_Kong','China':'Asia/Shanghai','Kenya':'Africa/Nairobi','South Africa':'Africa/Johannesburg','New Zealand':'Pacific/Auckland','Australia':'Australia/Sydney'};
+function zoneForCity(name,region){if(US_ZONE[name])return US_ZONE[name];
+  const country=((region||'').split(',').pop()||region||'').trim();return COUNTRY_ZONE[country]||null;}
+function zoneOffset(zone,y,mo,d,hh,mi){ // returns UTC offset in hours for that wall-clock moment, incl. DST
+  try{const dtf=new Intl.DateTimeFormat('en-US',{timeZone:zone,timeZoneName:'longOffset'});
+    let inst=Date.UTC(y,mo-1,d,hh,mi),off=null;
+    for(let k=0;k<2;k++){ // 2 passes converge (offset depends on the instant, which depends on offset)
+      const nm=dtf.formatToParts(new Date(inst)).find(p=>p.type==='timeZoneName').value;
+      const m=nm.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);if(!m)return null;
+      off=(+m[2])+(m[3]?(+m[3])/60:0);if(m[1]==='-')off=-off;
+      inst=Date.UTC(y,mo-1,d,hh,mi)-off*3600000;}
+    return off;
+  }catch(e){return null;}}
+let selectedZone=null;
+function resolveTz(tz,zone,y,mo,d,hh,mi){ // prefer the DST-aware offset when a known zone is selected
+  if(!zone)return {tz,dst:false};
+  const o=zoneOffset(zone,y,mo,d,hh,mi);
+  if(o==null)return {tz,dst:false};
+  return {tz:o,dst:Math.abs(o-tz)>0.01};}
+
+/* ======================= shareable deep link (base64, offline; NOT encrypted) ======================= */
+let lastInput=null;
+function encodeChart(i){try{return btoa(unescape(encodeURIComponent(JSON.stringify(
+  {n:i.name,d:`${i.y}-${i.mo}-${i.d}`,t:`${i.hh}:${i.mi}`,la:i.lat,lo:i.lon,tz:i.tz,g:i.gender,p:i.place}))));}catch(e){return '';}}
+function decodeChart(s){try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return null;}}
+function shareUrl(i){return location.origin+location.pathname+'?c='+encodeChart(i);}
+function applyShared(o){if(!o)return false;
+  const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
+  $('#name').value=o.n||'';$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  $('#tob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;$('#gender').value=o.g||'na';
+  $('#place').value=o.p||'';$('#lat').value=o.la;$('#lon').value=o.lo;$('#tz').value=o.tz;selectedZone=null;
+  $('#placeHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
 
 /* ======================= autocomplete / form ======================= */
 const placeInput=$('#place'), acList=$('#acList');
@@ -200,7 +278,7 @@ function searchCities(q){q=q.trim().toLowerCase();if(q.length<2)return[];
 function renderAC(){if(!acMatches.length){acList.classList.remove('show');return;}
   acList.innerHTML=acMatches.map((c,i)=>`<div class="ac-item${i===acIdx?' active':''}" data-i="${i}">${c[0]} <small>· ${c[1]} · ${c[2].toFixed(2)}° ${c[3].toFixed(2)}° · UTC${c[4]>=0?'+':''}${c[4]}</small></div>`).join('');
   acList.classList.add('show');}
-placeInput.addEventListener('input',()=>{acMatches=searchCities(placeInput.value);acIdx=-1;renderAC();});
+placeInput.addEventListener('input',()=>{selectedZone=null;acMatches=searchCities(placeInput.value);acIdx=-1;renderAC();});
 placeInput.addEventListener('keydown',e=>{if(!acMatches.length)return;
   if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,acMatches.length-1);renderAC();e.preventDefault();}
   else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);renderAC();e.preventDefault();}
@@ -210,7 +288,11 @@ acList.addEventListener('click',e=>{const it=e.target.closest('.ac-item');if(it)
 document.addEventListener('click',e=>{if(!e.target.closest('.field'))acList.classList.remove('show');});
 function pickCity(c){placeInput.value=c[0]+', '+c[1];acList.classList.remove('show');
   $('#lat').value=c[2];$('#lon').value=c[3];$('#tz').value=c[4];
-  $('#placeHint').textContent=`✓ ${c[2].toFixed(4)}°  ${c[3].toFixed(4)}°  ·  UTC${c[4]>=0?'+':''}${c[4]}`;}
+  selectedZone=zoneForCity(c[0],c[1]);
+  const z=selectedZone?'  ·  '+selectedZone+' (auto DST)':'';
+  $('#placeHint').textContent=`✓ ${c[2].toFixed(4)}°  ${c[3].toFixed(4)}°  ·  UTC${c[4]>=0?'+':''}${c[4]}${z}`;}
+// manual edits to coordinates/timezone/place text disable the auto-zone (respect the user's own numbers)
+['lat','lon','tz'].forEach(id=>$('#'+id).addEventListener('input',()=>{selectedZone=null;}));
 $('#manualToggle').addEventListener('click',()=>{const on=$('#mLat').classList.toggle('show');
   $('#mLon').classList.toggle('show');$('#mTz').classList.toggle('show');
   $('#manualToggle').textContent=(on?'▾':'▸')+' Enter latitude / longitude / timezone manually';});
@@ -234,8 +316,10 @@ function doCompute(){
   if(tz<-14||tz>14){err.textContent='Timezone must be between -14 and +14 hours from UTC.';return;}
   const[y,mo,d]=dob.split('-').map(Number),[hh,mi]=tob.split(':').map(Number);
   if(!y||y<1700||y>2200){err.textContent='Please enter a birth year between 1700 and 2200 (the ephemeris range).';return;}
-  const input={y,mo,d,hh,mi,lat,lon,tz,name:$('#name').value.trim()||'This nativity',
+  const rz=resolveTz(tz,selectedZone,y,mo,d,hh,mi);tz=rz.tz; // DST-aware offset when a known zone is selected
+  const input={y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:selectedZone,name:$('#name').value.trim()||'This nativity',
     gender:$('#gender').value,place:placeInput.value.trim()||`${lat.toFixed(3)}°, ${lon.toFixed(3)}°`};
+  lastInput=input;
   let chart;
   try{chart=J.buildChart(input);
     J.bhavaChalit(chart); // sets chart._mc
@@ -365,6 +449,8 @@ function renderReport(chart,input){
   const curMD=vim.list.find(m=>nowJD()>=m.st&&nowJD()<m.en);
   const curAD=curMD&&curMD.ad.find(a=>nowJD()>=a.st&&nowJD()<a.en);
   const nextMD=vim.list[vim.list.indexOf(curMD)+1];
+  // compact mobile summary bar (sticky on phones)
+  const mb=$('#mobileBar');if(mb){mb.innerHTML=`<span>La <b>${SS[asc]}</b></span><span>Moon <b>${moon.nak.name}</b></span><span>Daśā <b>${curMD?PL[curMD.lord]:'-'}</b></span>`;mb.classList.add('show');}
   // strengths & challenges (auto)
   const strengths=[],challenges=[];
   P.forEach(p=>{if(p.dig&&p.dig.cls==='exalt')strengths.push(`${PL[p.i]} exalted in the ${ord(p.house)} (${SG[p.sign]}) - a peak-strength graha.`);});
@@ -391,7 +477,7 @@ function renderReport(chart,input){
   add('sum',secHead('01','Janma Kuṇḍali - At a Glance')+
     `<div class="panel hero"><div class="eyebrow">Complete Vedic Horoscope</div>
       <div class="name">${esc(input.name)}</div>
-      <div class="born">${esc(born)} IST · ${esc(input.place)} · ${pan.vaara}, ${pan.tithi}</div>
+      <div class="born">${esc(born)} · UTC${input.tz>=0?'+':''}${input.tz}${input.dst?' (DST-adjusted)':''} · ${esc(input.place)} · ${pan.vaara}, ${pan.tithi}</div>
       <div class="hero-grid">
         <div class="stat"><div class="k">Lagna</div><div class="v">${SA[asc]}</div><div class="s">${SS[asc]} ${J.dm(chart.asc%30)} · ${chart.ascNak.name}-${chart.ascNak.pada}</div></div>
         <div class="stat"><div class="k">Rāśi (Moon)</div><div class="v">${SA[moon.sign]}</div><div class="s">${chart.planets[1].nak.name}-${moon.nak.pada} · house ${moon.house}</div></div>
@@ -659,9 +745,13 @@ function renderReport(chart,input){
     `<div class="tbl-wrap"><table><tbody>${GLOSS.map(g=>`<tr><td style="white-space:nowrap"><b>${g[0]}</b></td><td class="muted">${g[1]}</td></tr>`).join('')}</table></div>`);
 
   /* footer */
-  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button">⤓ Download PDF</button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design.</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button">⤓ Download PDF</button><button class="btn btn-ghost" id="shareBtn" type="button">🔗 Copy shareable link</button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
   R.appendChild(foot);
   $('#pdfBtn').addEventListener('click',()=>window.print());
+  $('#shareBtn').addEventListener('click',()=>{const url=shareUrl(lastInput||input);const b=$('#shareBtn');
+    const ok=()=>{const t=b.textContent;b.textContent='✓ Link copied';setTimeout(()=>b.textContent=t,1600);};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(ok,()=>prompt('Copy this link:',url));
+    else prompt('Copy this link:',url);});
   $('#editBtn').addEventListener('click',()=>smoothTo($('#formCard')));
 }
 
@@ -727,9 +817,12 @@ function challengeProse(chart,dsh,ss,P,asc){
 function lifeReadings(chart,input,vim,ss,fn,jm,pro,His,first){
   const P=chart.planets,asc=chart.ascSign,moon=P[1],out=[];
   out.push(['Personality & temperament',`${first} rises in ${LAGNA_TXT[asc]} With the ${moon.nak.name} Moon in ${SA[moon.sign]}, the inner life shows ${MOON_TXT[moon.sign]}`]);
-  const l10=SL[(asc+9)%12];out.push(['Career & profession',`The 10th (${SG[(asc+9)%12]}) is ruled by ${PL[l10]}, placed in the ${ord(P[l10].house)} - profession is built through ${HOUSE_THEME[P[l10].house-1]}. Suited to fields that reward ${l10===0?'leadership & authority':l10===3?'intellect & communication':l10===4?'teaching, law & counsel':l10===6?'structure, industry & endurance':l10===2?'engineering, drive & enterprise':'skill & refinement'}.`]);
+  const l10=SL[(asc+9)%12];const ct=J.careerTiming(chart);
+  out.push(['Career & profession',`The 10th (${SG[(asc+9)%12]}) is ruled by ${PL[l10]}, placed in the ${ord(P[l10].house)} - profession is built through ${HOUSE_THEME[P[l10].house-1]}. Suited to fields that reward ${l10===0?'leadership & authority':l10===3?'intellect & communication':l10===4?'teaching, law & counsel':l10===6?'structure, industry & endurance':l10===2?'engineering, drive & enterprise':'skill & refinement'}.${ct.windows.length?` Career-activating windows (10th-lord/Amātya daśās): ${ct.windows.map(w=>`<b>${w.label}</b> (${w.dasha})`).join('; ')}.`:''}`]);
   const l2=SL[(asc+1)%12],l11=SL[(asc+10)%12];out.push(['Wealth & finances',`Income (2nd lord ${PL[l2]} in the ${ord(P[l2].house)}, 11th lord ${PL[l11]} in the ${ord(P[l11].house)}) builds through ${HOUSE_THEME[P[l11].house-1]}. ${chart.planets.some(p=>p.dig&&p.dig.cls==='exalt'&&[2,11].includes(p.house))?'Exalted support in the wealth houses is a strong asset.':'Steady saving beats speculation.'}`]);
-  const l7=SL[(asc+6)%12];out.push(['Marriage & partnership',`The 7th (${SG[(asc+6)%12]}) is ruled by ${PL[l7]} in the ${ord(P[l7].house)}; Upapada in ${SG[jm.UL]}, Darakāraka ${J.charaKarakas(P)[6].name}. Partnership tends to arrive through ${HOUSE_THEME[P[l7].house-1]}; best from the late 20s onward with patience.`]);
+  const l7=SL[(asc+6)%12];const mt=J.marriageTiming(chart);
+  const mtxt=mt.windows.length?`Likeliest marriage windows, from the actual ${PL[mt.l7]}/Darakāraka/Upapada daśā periods${mt.windows.some(w=>w.dt)?' with Jupiter-Saturn double-transit support':''}: ${mt.windows.map(w=>`<b>age ${w.label}</b> (${w.dasha} daśā)`).join('; ')}.${mt.delayed?' The pattern leans later - patience serves.':''}`:'No sharply-defined marriage window stands out; timing spreads across the partnership-lord daśās.';
+  out.push(['Marriage & partnership',`The 7th (${SG[(asc+6)%12]}) is ruled by ${PL[l7]} in the ${ord(P[l7].house)}; Upapada in ${SG[jm.UL]}, Darakāraka ${J.charaKarakas(P)[6].name}, spouse-sign (7th lord in D-9) ${SG[mt.spouseSign]}. ${mtxt}`]);
   const l5=SL[(asc+4)%12];out.push(['Children & progeny',`The 5th (${SG[(asc+4)%12]}) lord ${PL[l5]} sits in the ${ord(P[l5].house)}; Jupiter (children-kāraka) in the ${ord(P[4].house)}. ${P[4].dig&&P[4].dig.cls==='exalt'?'Exalted Jupiter is about the best signature for children there is.':'Supportive for progeny with Jupiter periods.'}`]);
   out.push(['Health & vitality',`Underlying vitality from ${P[0].dig&&P[0].dig.cls!=='debil'?'a well-placed Sun':'the Sun'} and ${P[4].dig&&P[4].dig.cls==='exalt'?'exalted Jupiter':'Jupiter'}. ${ss.status==='ACTIVE'?'Through the Sade-Sati, watch stress, sleep and routine.':''}${P[2].combust?' Combust Mars asks care with blood-pressure, inflammation and accidents - drive carefully.':''} Moderation and routine keep it well-managed.`]);
   out.push(['Spirituality & inner life',`${P[8].house===1?'Ketu on the Lagna, ':''}${SA[asc]} rising and the Yogi linked to ${jm.yogiLord} draw ${pro} toward depth, philosophy and inner practice, especially in the ${jm.yogiLord} and later periods. Iṣṭa Devatā: ${J.ISHTA_DEV[SL[jm.ishta12]]}.`]);
@@ -746,7 +839,8 @@ function peopleReadings(chart,ck,jm,P,asc,pro,His){
 function depthReadings(chart,ck,jm,P,asc,vim,pro){
   const out=[];
   const sat=P[6];out.push(['Longevity (Āyu) - the traditional picture',`Saturn (āyuṣ-kāraka) sits in the ${ord(sat.house)}; the 8th lord and the protective aspects of Jupiter shape the picture. ${P.some(p=>p.dig&&p.dig.cls==='exalt')?'Dignified benefics lend good underlying vitality.':''} Classical jyotiṣa treats timing of death as the least certain of all readings - offered for reflection only, never as a verdict. The sensitive windows are the maraka-period years in old age.`]);
-  out.push(['Spouse - in depth',`7th lord ${PL[SL[(asc+6)%12]]} in the ${ord(P[SL[(asc+6)%12]].house)}, Darakāraka ${ck[6].name}, Upapada ${SG[jm.UL]}, and the D-9 Lagna colour the marriage. Timing best from the late 20s, maturing across the coming mahādaśās; conscious effort makes it stable and devoted.`]);
+  const mt=J.marriageTiming(chart);
+  out.push(['Spouse - in depth',`7th lord ${PL[SL[(asc+6)%12]]} in the ${ord(P[SL[(asc+6)%12]].house)}, Darakāraka ${ck[6].name}, Upapada ${SG[jm.UL]}, and the D-9 Lagna colour the marriage; the 7th lord sits in ${SG[mt.spouseSign]} in the Navāṁśa. ${mt.windows.length?`The computed likely windows (from the ${PL[mt.l7]}/Darakāraka/${mt.male?'Venus':'Jupiter'}-kāraka daśās${mt.windows.some(w=>w.dt)?', double-transit-confirmed':''}) are: ${mt.windows.map(w=>`<b>age ${w.label}</b> [${w.dasha}]`).join('; ')}.`:'Timing spreads across the partnership-lord daśās rather than one sharp window.'} Conscious effort makes the bond stable and devoted.`]);
   out.push(['Children - in depth',`Jupiter (5th kāraka) in the ${ord(P[4].house)}${P[4].dig&&P[4].dig.cls==='exalt'?', exalted in fortune':''}, with the D-7 Lagna, describes progeny. ${P[4].dig&&P[4].dig.cls==='exalt'?'About the best signature there is - capable, fortunate children.':'Supportive with Jupiter-period timing.'}`]);
   return out;
 }
