@@ -385,7 +385,7 @@ function bhavaChalit(chart){
 }
 
 /* ---------------- Dasha-based event timing (replaces generic age bands) ---------------- */
-function fmtAge(a){const yr=Math.floor(a);const mo=Math.round((a-yr)*12);return mo>0?`${yr} yr ${mo} mo`:`${yr} yr`;}
+function fmtAge(a){let yr=Math.floor(a);let mo=Math.round((a-yr)*12);if(mo>=12){yr+=1;mo=0;}return mo>0?`${yr} yr ${mo} mo`:`${yr} yr`;}
 function dashaWindows(chart,triggers,minAge,maxAge){
   const vim=J.vimshottari(chart.planets[1].lon,chart.jd);const wins=[];
   vim.list.forEach(md=>{md.ad.forEach(a=>{
@@ -437,8 +437,28 @@ function careerTiming(chart){
   return {windows:wins.map(w=>({label:`${fmtAge(w.startAge)} - ${fmtAge(w.endAge)}`,dasha:`${PLANETS[w.md]}-${PLANETS[w.ad]}`})),l10,amk};
 }
 
+/* ---------------- Health & vulnerability (6/8/12 + Kalapurusha body map + D30) ---------------- */
+const KALA_BODY=["head, brain & skull","face, throat, teeth & eyes","arms, shoulders, lungs & nervous system","chest, lungs, stomach & breast","heart, upper back & spine","abdomen, intestines & digestion","kidneys, lower back & ovaries","reproductive & excretory organs","hips, thighs & liver","knees, joints, bones & skin","calves, ankles & circulation","feet, lymphatic system & sleep"];
+const PLANET_SYS={0:"heart, bones, vitality & eyes",1:"body fluids, stomach & the mind",2:"blood, muscles, inflammation, accidents & injuries",3:"nervous system, skin & speech",4:"liver, fat metabolism & blood sugar",5:"kidneys, reproductive system & throat",6:"chronic conditions, bones, joints, teeth & nerves",7:"toxins, skin & hard-to-diagnose issues",8:"infections & sudden ailments"};
+function healthAnalysis(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l6=SIGN_LORD[(asc+5)%12], l8=SIGN_LORD[(asc+7)%12], l12=SIGN_LORD[(asc+11)%12];
+  const sixthSign=(asc+5)%12, eighthSign=(asc+7)%12;
+  const areas=[]; const seen=new Set();
+  const push=t=>{if(t&&!seen.has(t)){seen.add(t);areas.push(t);}};
+  push(KALA_BODY[sixthSign]); // the disease house's body zone
+  P.forEach(p=>{if(p.i<7&&[6,8,12].includes(p.house))push(PLANET_SYS[p.i]);}); // planets in dusthanas
+  P.forEach(p=>{if(p.i<7&&((p.dig&&p.dig.cls==='debil')||p.combust))push(PLANET_SYS[p.i]);}); // afflicted grahas
+  const nowJD=J2000+(Date.now()-EPOCH)/86400000; const curAge=(nowJD-chart.jd)/YEAR;
+  const afflicted=P.filter(p=>p.i<7&&((p.dig&&p.dig.cls==='debil')||p.combust)).map(p=>p.i);
+  const triggers=[...new Set([l6,l8,l12,...afflicted])].filter(x=>x<9);
+  let wins=dashaWindows(chart,triggers,0,95).filter(w=>w.endAge>curAge-1).slice(0,3);
+  return {areas:areas.slice(0,4),l6,l8,l12,afflicted,sixthSign,eighthSign,
+    windows:wins.map(w=>({label:`${fmtAge(w.startAge)} - ${fmtAge(w.endAge)}`,dasha:`${PLANETS[w.md]}-${PLANETS[w.ad]}`}))};
+}
+
 /* expose */
 Object.assign(J,{panchanga,avakhada,functionalNature,aspects,avasthas,compoundRel,jaimini,ISHTA_DEV,
   upagrahas,gulika,sunEvents,shadbala,doshas,sadeSati,gochara,nearTerm,bhavaChalit,transitLon,ownsHouses,
-  marriageTiming,careerTiming,NAISARGIKA,REQ});
+  marriageTiming,careerTiming,healthAnalysis,NAISARGIKA,REQ});
 })();
