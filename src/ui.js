@@ -505,11 +505,27 @@ const prefersReduce=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
    what makes that inspectable rather than something the reader has to trust. */
 function whyBlock(w){
   if(!w||!w.rule)return'';
-  return '<details class="why-rule"><summary>why this reading?</summary>'
+  return '<details class="why-rule"><summary>'
+    +'<span class="why-screen">why this reading?</span>'
+    +'<span class="why-print">Source of this reading</span></summary>'
     +`<dl><dt>Rule</dt><dd>${esc(w.rule)}</dd>`
     +`<dt>This chart</dt><dd class="mono">${esc(w.chart)}</dd>`
     +`<dt>Tradition</dt><dd>${esc(w.tradition)}</dd></dl></details>`;
 }
+/* The exported PDF carries the provenance too, so a printed chart is
+   self-documenting. Expand every disclosure for the print run, then put back
+   exactly the ones we opened. Chrome/Firefox fire beforeprint; Safari only
+   flips the print media query, so both paths are wired. */
+function setWhyOpen(on){
+  document.querySelectorAll('.why-rule').forEach(d=>{
+    if(on){if(!d.open){d.open=true;d.dataset.autoOpen='1';}}
+    else if(d.dataset.autoOpen){d.open=false;delete d.dataset.autoOpen;}
+  });
+}
+window.addEventListener('beforeprint',()=>setWhyOpen(true));
+window.addEventListener('afterprint',()=>setWhyOpen(false));
+(function(){const mq=matchMedia('print');const h=e=>setWhyOpen(e.matches);
+  if(mq.addEventListener)mq.addEventListener('change',h);else if(mq.addListener)mq.addListener(h);})();
 function smoothTo(target){if(!target)return;
   const navH=$('#jumpNav').offsetHeight||0;
   const y=target.getBoundingClientRect().top+window.pageYOffset-navH-8;

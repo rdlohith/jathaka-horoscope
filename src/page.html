@@ -318,6 +318,7 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   letter-spacing:.11em;color:var(--ink-faint);font-weight:600;padding-top:2px;white-space:nowrap}
 .why-rule dd{margin:0;color:var(--ink-soft);line-height:1.5}
 .why-rule dd.mono{font-family:var(--mono);font-size:11.5px}
+.why-print{display:none}
 @media (max-width:560px){.why-rule dl{grid-template-columns:1fr;gap:2px}
   .why-rule dt{margin-top:6px}}
 
@@ -357,6 +358,20 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   /* drop the app chrome and the non-report panels */
   #loginScreen,nav.jump,#mobileBar,.theme-btn,.header-actions,#formCard,#showcase,#whyCorrect,
   .footer-actions,.starfield,#history{ display:none !important; }
+  /* provenance travels with the PDF - JS opens each disclosure on beforeprint;
+     this also forces the content visible for any renderer that skips the event */
+  details.why-rule>dl{display:grid !important}
+  .why-rule{max-width:none;margin-top:6px;break-inside:avoid;page-break-inside:avoid}
+  .why-rule summary{font-size:8.5px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--brass-deep);font-weight:600}
+  .why-rule summary:before{display:none}
+  .why-screen{display:none}
+  .why-print{display:inline}
+  .why-rule dl{background:none;border-left:1.5px solid var(--brass);padding:4px 0 4px 9px;
+    margin:3px 0 0;gap:1px 10px}
+  .why-rule dt{font-size:7.5px;letter-spacing:.09em}
+  .why-rule dd{font-size:9px;line-height:1.4}
+  .why-rule dd.mono{font-size:8.5px}
   /* the sponsor credit rides along on the exported PDF as a compact colophon.
      To keep it screen-only instead, add .site-foot to the display:none rule above. */
   .site-foot{ margin-top:18px;background:none;border-top:1px solid var(--brass);
