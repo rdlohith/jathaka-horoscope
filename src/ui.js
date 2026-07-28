@@ -498,6 +498,18 @@ verify:"Proof of accuracy: how the maths is computed and cross-checked against t
 glossary:"Plain-English meanings of the Sanskrit terms used throughout."};
 
 const prefersReduce=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* Provenance for a generated verdict: the classical condition that fired, the
+   values from THIS chart that satisfied it, and the tradition it belongs to.
+   Every reading in the report is the output of a deterministic test - this is
+   what makes that inspectable rather than something the reader has to trust. */
+function whyBlock(w){
+  if(!w||!w.rule)return'';
+  return '<details class="why-rule"><summary>why this reading?</summary>'
+    +`<dl><dt>Rule</dt><dd>${esc(w.rule)}</dd>`
+    +`<dt>This chart</dt><dd class="mono">${esc(w.chart)}</dd>`
+    +`<dt>Tradition</dt><dd>${esc(w.tradition)}</dd></dl></details>`;
+}
 function smoothTo(target){if(!target)return;
   const navH=$('#jumpNav').offsetHeight||0;
   const y=target.getBoundingClientRect().top+window.pageYOffset-navH-8;
@@ -662,7 +674,7 @@ function renderReport(chart,input){
 
   /* ---------- 08 YOGAS ---------- */
   add('yoga',secHead('08','Yogas - planetary combinations')+
-    (yog.length?`<div class="yoga-list">${yog.map(y=>`<div class="yoga"><span class="icon">✦</span><div><b>${y[0]}</b><p>${y[1]}</p></div></div>`).join('')}</div>`
+    (yog.length?`<div class="yoga-list">${yog.map(y=>`<div class="yoga"><span class="icon">✦</span><div><b>${y[0]}</b><p>${y[1]}</p>${whyBlock(y[2])}</div></div>`).join('')}</div>`
     :'<p class="empty">No major classical yogas flagged.</p>'));
 
   /* ---------- 09 PLANETARY STATES ---------- */
@@ -709,7 +721,7 @@ function renderReport(chart,input){
 
   /* ---------- 13 DOSHAS ---------- */
   let dRows='';dsh.forEach(d=>{const cls=d.status.includes('ABSENT')||d.status==='Absent'?'good':d.status.includes('PRESENT')||d.status==='ACTIVE'?'warn':'muted';
-    dRows+=`<tr><td>${d.name}</td><td><span class="stat-pill ${cls}">${d.status}</span></td><td class="muted">${d.detail}</td></tr>`;});
+    dRows+=`<tr><td>${d.name}</td><td><span class="stat-pill ${cls}">${d.status}</span></td><td class="muted">${d.detail}${whyBlock(d.why)}</td></tr>`;});
   add('doshas',secHead('13','Doshas (Afflictions) & Graha Yuddha')+
     `<div class="tbl-wrap"><table><thead><tr><th>Dosha</th><th>Status</th><th>Detail & mitigation</th></tr></thead><tbody>${dRows}</tbody></table></div>`);
 
@@ -816,7 +828,8 @@ function renderReport(chart,input){
   add('verify',secHead('27','Accuracy & Verification')+
     `<div class="prose"><div class="read"><div class="tag">Method</div><p>All positions, nakṣatras, divisional signs, Ashtakavarga bindus, daśā dates and transit ingresses are computed on your device from the astronomy-engine ephemeris (Swiss-Ephemeris-grade) with the Lahiri (Chitrapaksha) ayanāṁśa. No internet, no AI.</p></div>
     <div class="read"><div class="tag">Ayanāṁśa check</div><p>The Lahiri ayanāṁśa at birth computes to ${J.ayanamsa(chart.jd).toFixed(4)}° - the model reproduces the Swiss Ephemeris to under 0.001 arc-second across 1900-2100.</p></div>
-    <div class="read"><div class="tag">Cross-validation</div><p>This engine was validated arc-minute against pyswisseph on independent reference charts - every planet's sign, degree, nakṣatra, pada and house matched, and the Sarvashtakavarga totalled the classical 337.</p></div></div>`);
+    <div class="read"><div class="tag">Cross-validation</div><p>This engine was validated arc-minute against pyswisseph on independent reference charts - every planet's sign, degree, nakṣatra, pada and house matched, and the Sarvashtakavarga totalled the classical 337.</p></div>
+    <div class="read"><div class="tag">Nothing is invented</div><p>No language model writes any part of this report. Every verdict is the output of a fixed classical test applied to your computed chart - the same birth details always produce the identical text, word for word. Where a reading appears in the Yogas and Doshas sections you can open <b>"why this reading?"</b> to see the exact rule that fired, the values from your chart that satisfied it, and the tradition it belongs to. Where a rule is popular in modern practice but absent from the classical corpus - Kāla-Sarpa, for instance - it says so.</p></div></div>`);
 
   /* ---------- 28 GLOSSARY ---------- */
   const GLOSS=[['Lagna','The rising sign/degree; the 1st house and basis of the chart.'],['Rāśi','A zodiac sign; also the Moon-sign (Janma Rāśi).'],['Nakṣatra / Pada','One of 27 lunar mansions and its quarter; the Moon\'s nakṣatra sets the daśā.'],['Bhava','An astrological house (1-12).'],['Graha','A planet (the nine: Sun…Saturn, Rahu, Ketu).'],['Exalted / Debilitated','A planet\'s sign of greatest strength / weakness.'],['Vargottama','Same sign in D-1 and D-9 - a mark of strength.'],['Combust (Asta)','A planet too close to the Sun, losing brightness.'],['Yoga','A planetary combination producing a defined result.'],['Dosha','An affliction (Manglik, Kāla-Sarpa…).'],['Vimśottari Daśā','The 120-year period timeline: Mahā → Antar → Pratyantar.'],['Ashtakavarga','A bindu (point) system scoring sign/house strength; total 337.'],['Shadbala','The six-fold mathematical strength of a planet, in rūpas.'],['Varga','A divisional/harmonic sub-chart for a life area.'],['Bhava Chalit','A chart placing planets by exact house cusps.'],['Ātmakāraka','The Jaimini soul-significator (highest-degree planet).'],['Arudha Lagna','The chart\'s "image" - how the world perceives the person.'],['Upagraha','A sensitive sub-point (e.g. Gulika/Mandi).'],['Sade-Sati','Saturn\'s ~7.5-year transit over the 12th/1st/2nd from the Moon.'],['Ayanāṁśa','The precession correction from tropical to sidereal; Lahiri is the Indian standard.']];

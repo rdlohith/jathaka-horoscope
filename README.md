@@ -15,6 +15,8 @@ server, no AI, and no network calls at runtime**.
 - Yogas, doshas, house-lord analysis, planetary aspects
 - Vimśottari (mahā + antar) and Yoginī daśās, Sade-Sati, year-by-year Gochara to 2100, near-term forecast
 - Rule-based life readings, remedies, and a branded **PDF export** (print to PDF)
+- **"Why this reading?"** - every yoga and dosha opens to show the exact classical rule that
+  fired, the values from your chart that satisfied it, and the tradition it belongs to
 - Optional **device-local login** (accounts stored only in your browser; nothing is sent anywhere)
 
 ## Accuracy
@@ -22,6 +24,14 @@ server, no AI, and no network calls at runtime**.
 The astronomy comes from **[astronomy-engine](https://github.com/cosinekitty/astronomy)** (Don Cross,
 MIT) - Swiss-Ephemeris-grade positions. The Lahiri ayanāṁśa model reproduces the Swiss Ephemeris to
 under 0.001 arc-second across 1900-2100, and the engine was validated arc-minute against `pyswisseph`.
+
+## Nothing is generated
+
+No language model is involved at any point. Every line of every reading is the output of a fixed
+classical test applied to the computed chart, so the same birth details always produce byte-identical
+text. In the Yogas and Doshas sections each verdict carries a **"why this reading?"** disclosure
+showing the rule, the chart values that satisfied it, and its tradition - and where a rule is popular
+in modern practice but absent from the classical corpus (Kāla-Sarpa, for instance) it says so.
 
 ## Build
 

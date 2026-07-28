@@ -247,28 +247,43 @@ function doshas(chart){
   const marsOwnEx=SIGN_LORD[P[2].sign]===2||(EXALT[2]&&EXALT[2][0]===P[2].sign);
   const refs=[fromL?`${marsH}th from Lagna`:'',fromM?`${marsFromMoon}th from Moon`:'',fromV?`${marsFromVenus}th from Venus`:''].filter(Boolean).join(', ');
   out.push({name:"Manglik / Kuja Dosha",status:manglik?((marsOwnEx||(!fromL&&!fromM))?"PRESENT (mild)":"PRESENT"):"Absent",
-    detail:manglik?`Mars sits ${refs}.${marsOwnEx?" Softened - Mars in its own/exalted sign.":(!fromL&&!fromM)?" Mild - a Venus-reckoned form, mainly for matching.":" Match with a chart that also carries it; Hanuman worship."}`:"Mars avoids the Manglik houses (1,2,4,7,8,12) from Lagna, Moon and Venus."});
+    detail:manglik?`Mars sits ${refs}.${marsOwnEx?" Softened - Mars in its own/exalted sign.":(!fromL&&!fromM)?" Mild - a Venus-reckoned form, mainly for matching.":" Match with a chart that also carries it; Hanuman worship."}`:"Mars avoids the Manglik houses (1,2,4,7,8,12) from Lagna, Moon and Venus.",
+    why:{rule:"Mars occupies the 1st, 2nd, 4th, 7th, 8th or 12th counted from the Lagna, the Moon or Venus"+(marsOwnEx?"; cancelled or softened when Mars is in its own sign or exaltation":""),
+      chart:`Mars in ${J.SIGNS[P[2].sign]} - ${marsH}th from Lagna, ${marsFromMoon}th from Moon, ${marsFromVenus}th from Venus`+(marsOwnEx?"; Mars is in its own/exalted sign":""),
+      tradition:"Kuja dosha - classical matching (melāpaka) tradition"}});
   // Pitru: Sun/Moon with Rahu/Ketu, or Sun+Saturn afflicted
   const pitru=P[1].sign===P[8].sign||P[1].sign===P[7].sign||P[0].sign===P[8].sign||P[0].sign===P[7].sign;
   out.push({name:"Pitru Dosha",status:pitru?"Present":"Absent",
-    detail:pitru?"Luminary conjunct a node - an ancestral-karma signature; remedy: Tarpana / Shraddha.":"No node-luminary affliction of the classic type."});
+    detail:pitru?"Luminary conjunct a node - an ancestral-karma signature; remedy: Tarpana / Shraddha.":"No node-luminary affliction of the classic type.",
+    why:{rule:"The Sun or the Moon shares a sign with Rāhu or Ketu",
+      chart:`Sun in ${J.SIGNS[P[0].sign]}, Moon in ${J.SIGNS[P[1].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`,
+      tradition:"Ancestral-karma reading - traditional practice rather than a single canonical text"}});
   // Kala Sarpa
   const rl=P[7].lon; let side=null,ksp=true;
   for(let i=0;i<7;i++){const x=norm(P[i].lon-rl);if(side===null)side=x<180;else if((x<180)!==side){ksp=false;break;}}
   out.push({name:"Kala Sarpa Dosha",status:ksp?"PRESENT":"ABSENT",
-    detail:ksp?"All seven planets fall on one side of the Rahu-Ketu axis.":"Planets fall on both sides of the Rahu-Ketu axis - this feared dosha does NOT apply."});
+    detail:ksp?"All seven planets fall on one side of the Rahu-Ketu axis.":"Planets fall on both sides of the Rahu-Ketu axis - this feared dosha does NOT apply.",
+    why:{rule:"All seven grahas (Sun to Saturn) lie within the 180° arc on one side of the Rāhu-Ketu axis",
+      chart:`Rāhu at ${J.dm(P[7].lon)}, Ketu at ${J.dm(P[8].lon)} - grahas ${ksp?"all fall on one side":"fall on both sides"}`,
+      tradition:"Later tradition - popular in modern practice, not found in the classical Parāśari corpus"}});
   // Kemadruma
   const around=[];for(let i=0;i<7;i++){if(i===1)continue;const d=((P[i].sign-P[1].sign)%12+12)%12+1;if(d===2||d===12)around.push(d);}
   const withMoon=P.some((p,i)=>i>=0&&i<=6&&i!==1&&p.sign===P[1].sign);
   const kema=around.length===0&&!withMoon;
   const kendraOcc=P.some(p=>[4,7,10].includes(((p.sign-P[1].sign)%12+12)%12+1)&&p.i!==1&&p.i<=6);
   out.push({name:"Kemadruma Dosha",status:kema?"PRESENT":"Absent",
-    detail:kema?(kendraOcc?"Present but cushioned by planets in a kendra from the Moon.":"No planets flank the Moon - the 'lonely Moon'."):"A planet flanks the Moon (2nd/12th) or joins it - Kemadruma is cancelled."});
+    detail:kema?(kendraOcc?"Present but cushioned by planets in a kendra from the Moon.":"No planets flank the Moon - the 'lonely Moon'."):"A planet flanks the Moon (2nd/12th) or joins it - Kemadruma is cancelled.",
+    why:{rule:"No graha occupies the 2nd or the 12th from the Moon, and none is conjoined it"+(kema&&kendraOcc?"; cushioned when a graha holds a kendra from the Moon":""),
+      chart:`Moon in ${J.SIGNS[P[1].sign]}; flanking signs ${around.length?"occupied ("+around.map(d=>d+"th").join(", ")+")":"empty"}, Moon ${withMoon?"conjoined by a graha":"unconjoined"}`,
+      tradition:"Parāśari yoga tradition"}});
   // Graha Yuddha
   let war=null;
   for(let i=2;i<=6;i++)for(let j=i+1;j<=6;j++)if(i!==0&&arcdist(P[i].lon,P[j].lon)<1&&P[i].sign===P[j].sign)war=[PLANETS[P[i].i],PLANETS[P[j].i]];
   out.push({name:"Graha Yuddha (planetary war)",status:war?"Present":"Absent",
-    detail:war?`${war[0]} and ${war[1]} within 1° - a planetary war.`:"No two planets within 1° - no planetary war."});
+    detail:war?`${war[0]} and ${war[1]} within 1° - a planetary war.`:"No two planets within 1° - no planetary war.",
+    why:{rule:"Two of the five tārā grahas (Mars, Mercury, Jupiter, Venus, Saturn) stand within 1° of each other in the same sign",
+      chart:war?`${war[0]} and ${war[1]} separated by under 1°`:"Closest pair of tārā grahas exceeds 1° of separation",
+      tradition:"Graha yuddha - classical (Sūrya Siddhānta / Parāśari) rule"}});
   return out;
 }
 
