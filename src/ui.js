@@ -339,7 +339,7 @@ $('#manualToggle').addEventListener('click',()=>{const on=$('#mLat').classList.t
 /* plain-English toggle */
 (function(){const btn=$('#laymanBtn');if(!btn)return;
   function set(on){document.body.classList.toggle('show-layman',on);btn.setAttribute('aria-pressed',on?'true':'false');
-    btn.textContent=on?'📖 Plain English: On':'📖 Plain English: Off';}
+    const lbl=btn.querySelector('.lbl');if(lbl)lbl.textContent=on?'Plain English: On':'Plain English: Off';}
   set(LS.get('jathaka-layman')===true);
   btn.addEventListener('click',()=>{const on=!document.body.classList.contains('show-layman');set(on);LS.set('jathaka-layman',on);});})();
 $('#sampleBtn').addEventListener('click',()=>{$('#name').value='Sample Chart';$('#dob').value='2000-01-01';
@@ -497,10 +497,11 @@ nearterm:"A month-by-month timeline of the next few years' key planetary changes
 verify:"Proof of accuracy: how the maths is computed and cross-checked against the Swiss Ephemeris.",
 glossary:"Plain-English meanings of the Sanskrit terms used throughout."};
 
+const prefersReduce=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
 function smoothTo(target){if(!target)return;
   const navH=$('#jumpNav').offsetHeight||0;
   const y=target.getBoundingClientRect().top+window.pageYOffset-navH-8;
-  window.scrollTo({top:y,behavior:'smooth'});}
+  window.scrollTo({top:y,behavior:prefersReduce()?'auto':'smooth'});}
 
 /* ======================= RENDER ======================= */
 function renderReport(chart,input){
@@ -517,6 +518,8 @@ function renderReport(chart,input){
   const first=esc(input.name.split(' ')[0]);
   const dignOf=p=>p.dig?`<span class="pill ${p.dig.cls}">${p.dig.label}</span>`:'';
   const jump=$('#jumpInner');jump.innerHTML=SECTIONS.map(s=>`<a href="#sec-${s[0]}" data-sec="${s[0]}">${s[1]}</a>`).join('');
+  const jc=$('#jumpCount');if(jc)jc.textContent='1 / '+SECTIONS.length;
+  requestAnimationFrame(railUpdate);
 
   const add=(id,html)=>{const s=el('section','rpt',html);s.id='sec-'+id;R.appendChild(s);return s;};
 
@@ -825,11 +828,12 @@ function renderReport(chart,input){
     if(g){const sh=s.querySelector('.sec-head');if(sh)sh.insertAdjacentHTML('afterend',`<div class="layman-note">${g}</div>`);}});
 
   /* footer */
-  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button">⤓ Download PDF</button><button class="btn btn-ghost" id="shareBtn" type="button">🔗 Copy shareable link</button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
   R.appendChild(foot);
   $('#pdfBtn').addEventListener('click',()=>window.print());
   $('#shareBtn').addEventListener('click',()=>{const url=shareUrl(lastInput||input);const b=$('#shareBtn');
-    const ok=()=>{const t=b.textContent;b.textContent='✓ Link copied';setTimeout(()=>b.textContent=t,1600);};
+    const ok=()=>{const l=b.querySelector('.lbl');if(!l)return;const t=l.textContent;
+      l.textContent='Link copied';setTimeout(()=>{l.textContent=t;},1600);};
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(ok,()=>prompt('Copy this link:',url));
     else prompt('Copy this link:',url);});
   $('#editBtn').addEventListener('click',()=>smoothTo($('#formCard')));
@@ -838,18 +842,45 @@ function renderReport(chart,input){
 /* jump nav handlers (fixed scrolling) */
 $('#jumpInner').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;e.preventDefault();
   const t=document.getElementById('sec-'+a.dataset.sec);smoothTo(t);});
+
+/* ---- nav rail affordances ----------------------------------------------
+   The scrollbar is hidden in CSS; these keep the end-fades, the arrows and the
+   "n / 28" counter honest, so it is obvious there is more nav off-screen. */
+function railUpdate(){
+  const rail=$('#jumpRail'),inner=$('#jumpInner');if(!rail||!inner)return;
+  const max=inner.scrollWidth-inner.clientWidth,x=inner.scrollLeft;
+  rail.classList.toggle('scrollable',max>4);
+  inner.classList.toggle('at-start',x<=1);
+  inner.classList.toggle('at-end',x>=max-1);
+  const prev=$('#jumpPrev'),next=$('#jumpNext');
+  if(prev)prev.disabled=x<=1;
+  if(next)next.disabled=x>=max-1;
+}
+function railScroll(dir){const inner=$('#jumpInner');if(!inner)return;
+  inner.scrollBy({left:dir*Math.max(180,inner.clientWidth*.7),
+    behavior:prefersReduce()?'auto':'smooth'});}
+$('#jumpPrev').addEventListener('click',()=>railScroll(-1));
+$('#jumpNext').addEventListener('click',()=>railScroll(1));
+let railTimer=null;
+$('#jumpInner').addEventListener('scroll',()=>{if(railTimer)return;
+  railTimer=setTimeout(()=>{railTimer=null;railUpdate();},60);},{passive:true});
+window.addEventListener('resize',railUpdate);
 /* scroll-spy: attached ONCE at load; queries the nav live so it never leaks or goes stale */
 let spyTimer=null;
 window.addEventListener('scroll',()=>{if(spyTimer)return;spyTimer=setTimeout(()=>{spyTimer=null;
   const nav=$('#jumpNav');if(!nav||!nav.classList.contains('show'))return;
-  const navH=nav.offsetHeight+20;let cur=null;
-  SECTIONS.forEach(s=>{const el=document.getElementById('sec-'+s[0]);if(el&&el.getBoundingClientRect().top<=navH)cur=s[0];});
+  const navH=nav.offsetHeight+20;let cur=null,curIdx=-1;
+  SECTIONS.forEach((s,i)=>{const el=document.getElementById('sec-'+s[0]);
+    if(el&&el.getBoundingClientRect().top<=navH){cur=s[0];curIdx=i;}});
   const inner=$('#jumpInner');if(!inner)return;
   inner.querySelectorAll('a').forEach(a=>a.classList.remove('active-link'));
   if(cur){const a=inner.querySelector('a[data-sec="'+cur+'"]');
     if(a){a.classList.add('active-link');
       const target=a.offsetLeft-inner.clientWidth/2+a.offsetWidth/2;
       if(Math.abs(inner.scrollLeft-target)>4)inner.scrollLeft=Math.max(0,target);}}
+  const cnt=$('#jumpCount');
+  if(cnt)cnt.textContent=(curIdx>=0?curIdx+1:1)+' / '+SECTIONS.length;
+  railUpdate();
 },80);},{passive:true});
 
 /* ======================= prose generators ======================= */

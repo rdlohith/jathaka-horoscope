@@ -1,5 +1,32 @@
-<title>Jathaka - Vedic Horoscope Calculator</title>
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Jāthaka ॐ - Vedic Horoscope Calculator | Offline Janma Kundali</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Cast a complete 28-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - computed entirely in your browser. Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
+<meta name="author" content="Jāthaka">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#111226" media="(prefers-color-scheme:dark)">
+
+<!-- favicon: the brass yantra, inline so the page stays fully offline -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23191A33'/%3E%3Ccircle cx='50' cy='50' r='33' fill='none' stroke='%23C9A24A' stroke-width='5'/%3E%3Cg stroke='%23C9A24A' stroke-width='5' stroke-linecap='round'%3E%3Cline x1='50' y1='11' x2='50' y2='89'/%3E%3Cline x1='11' y1='50' x2='89' y2='50'/%3E%3C/g%3E%3Ccircle cx='50' cy='50' r='11' fill='%23C9A24A'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23191A33'/%3E%3Ccircle cx='50' cy='50' r='33' fill='none' stroke='%23C9A24A' stroke-width='5'/%3E%3Cg stroke='%23C9A24A' stroke-width='5' stroke-linecap='round'%3E%3Cline x1='50' y1='11' x2='50' y2='89'/%3E%3Cline x1='11' y1='50' x2='89' y2='50'/%3E%3C/g%3E%3Ccircle cx='50' cy='50' r='11' fill='%23C9A24A'/%3E%3C/svg%3E">
+
+<!-- link previews (WhatsApp / Slack / X / iMessage) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jāthaka">
+<meta property="og:title" content="Jāthaka - Vedic Horoscope Calculator">
+<meta property="og:description" content="A complete 28-section janma kundali - Lagna, nakṣatra, vargas, daśā and transits - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta property="og:url" content="https://rdlohith.github.io/jathaka-horoscope/">
+<meta property="og:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jāthaka - Vedic Horoscope Calculator">
+<meta name="twitter:description" content="A complete 28-section janma kundali cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta name="twitter:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <style>
 /* ============ Brass & Indigo design system ============ */
 :root{
@@ -84,6 +111,20 @@ label{font-size:12.5px;font-weight:600;color:var(--ink-soft);letter-spacing:.02e
 input,select{font-family:var(--sans);font-size:15px;color:var(--ink);background:var(--ground);
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 input:focus,select:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:var(--brass)}
+/* one keyboard focus ring for the whole site - buttons and links used to fall
+   back to whatever outline the browser felt like drawing */
+a:focus-visible,button:focus-visible,summary:focus-visible,
+[tabindex]:focus-visible,.ac-item:focus-visible{
+  outline:2px solid var(--brass);outline-offset:2px}
+/* motion: everything interactive eases instead of snapping */
+a,button,.btn,.theme-btn,.mini-btn,.manual-toggle,.ac-item,.celeb,.chip,.jump-arrow{
+  transition:background-color .16s ease,border-color .16s ease,color .16s ease,
+    box-shadow .16s ease,opacity .16s ease,transform .16s ease}
+/* line-art icons, so button glyphs match the serif/brass look on every platform
+   instead of rendering as a different full-colour emoji per OS */
+.ico{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.btn .ico{width:15px;height:15px}
 .hint{font-size:11.5px;color:var(--ink-faint)}
 .ac-list{position:absolute;top:100%;left:0;right:0;z-index:30;background:var(--panel);
   border:1px solid var(--line);border-radius:10px;margin-top:4px;max-height:240px;overflow:auto;
@@ -95,7 +136,8 @@ input:focus,select:focus{outline:2px solid var(--brass);outline-offset:1px;borde
 .ac-item small{color:var(--ink-faint);font-family:var(--mono)}
 .form-actions{display:flex;gap:12px;align-items:center;margin-top:20px;flex-wrap:wrap}
 .btn{font-family:var(--sans);font-weight:600;font-size:15px;border-radius:11px;padding:12px 22px;
-  cursor:pointer;border:1px solid transparent}
+  cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;
+  justify-content:center;gap:8px}
 .btn-primary{background:linear-gradient(180deg,var(--brass-bright),var(--brass));color:#231a06;
   box-shadow:0 2px 10px color-mix(in srgb,var(--brass) 40%,transparent)}
 .btn-primary:hover{filter:brightness(1.05)}
@@ -112,10 +154,38 @@ nav.jump{position:sticky;top:0;z-index:20;background:
   color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line);display:none}
 nav.jump.show{display:block}
-.jump-inner{display:flex;gap:4px;overflow-x:auto;padding:9px 0}
+.jump-rail{display:flex;align-items:center;gap:8px}
+/* the rail hides the native scrollbar and fades its ends instead, so the strip
+   reads as parchment rather than a grey OS scrollbar (and takes no extra height) */
+.jump-inner{display:flex;gap:4px;overflow-x:auto;padding:9px 0;flex:1;min-width:0;
+  scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30px,#000 calc(100% - 30px),transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 30px,#000 calc(100% - 30px),transparent 100%)}
+.jump-inner::-webkit-scrollbar{display:none}
+/* fade only the side that actually has more content */
+.jump-inner.at-start{-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%);
+  mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%)}
+.jump-inner.at-end{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30px,#000 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 30px,#000 100%)}
+.jump-inner.at-start.at-end{-webkit-mask-image:none;mask-image:none}
 .jump-inner a{font-size:13px;color:var(--ink-soft);text-decoration:none;padding:6px 12px;
-  border-radius:8px;white-space:nowrap;font-weight:500}
+  border-radius:8px;white-space:nowrap;font-weight:500;
+  transition:background-color .16s ease,color .16s ease}
 .jump-inner a:hover{background:var(--panel);color:var(--ink)}
+/* arrows: the mouse-user affordance that "there are 27 sections, keep going" */
+.jump-arrow{flex:none;width:27px;height:27px;padding:0;border-radius:50%;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);
+  font-family:var(--serif);font-size:16px;line-height:1;display:none;
+  align-items:center;justify-content:center;
+  transition:background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease}
+.jump-rail.scrollable .jump-arrow{display:flex}
+.jump-arrow:hover{border-color:var(--brass);color:var(--ink);background:var(--panel-2)}
+.jump-arrow[disabled]{opacity:.28;cursor:default;border-color:var(--line);
+  background:var(--panel);color:var(--ink-soft)}
+.jump-count{flex:none;font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+  letter-spacing:.04em;white-space:nowrap;display:none}
+.jump-rail.scrollable .jump-count{display:block}
 
 /* report */
 #report{display:none}
@@ -231,6 +301,21 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   padding:20px 0 40px;margin-top:30px;text-align:center}
 .footer-actions{display:flex;gap:12px;justify-content:center;margin:26px 0 10px;flex-wrap:wrap}
 
+/* persistent site footer - present from first load, not only after a chart is cast */
+.site-foot{border-top:1px solid var(--line);margin-top:56px;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--panel) 55%,transparent))}
+.foot-inner{padding:32px 22px 38px;display:flex;flex-direction:column;
+  align-items:center;gap:15px;text-align:center}
+.foot-mark{display:flex;align-items:center;gap:11px}
+.foot-mark svg{width:27px;height:27px;flex:none}
+.foot-mark .fm-name{font-family:var(--serif);font-size:17px;font-weight:600;line-height:1.2}
+.foot-mark .fm-sub{font-size:11.5px;color:var(--ink-faint);margin-top:1px}
+.foot-credit{font-size:13px;color:var(--ink-soft);display:flex;align-items:center;
+  gap:10px;flex-wrap:wrap;justify-content:center}
+.foot-credit .rule{width:28px;height:1px;background:var(--line);flex:none}
+.foot-credit b{font-family:var(--serif);color:var(--brass);font-weight:600;letter-spacing:.02em}
+.foot-note{font-size:11.5px;color:var(--ink-faint);max-width:660px;line-height:1.65;margin:0}
+
 .empty{text-align:center;color:var(--ink-faint);padding:40px 0;font-size:14px}
 
 /* print */
@@ -250,6 +335,15 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   /* drop the app chrome and the non-report panels */
   #loginScreen,nav.jump,#mobileBar,.theme-btn,.header-actions,#formCard,#showcase,#whyCorrect,
   .footer-actions,.starfield,#history{ display:none !important; }
+  /* the sponsor credit rides along on the exported PDF as a compact colophon.
+     To keep it screen-only instead, add .site-foot to the display:none rule above. */
+  .site-foot{ margin-top:18px;background:none;border-top:1px solid var(--brass);
+    break-inside:avoid;page-break-inside:avoid }
+  .foot-inner{ padding:10px 0 0;gap:6px }
+  .foot-mark svg{ width:19px;height:19px }
+  .foot-mark .fm-name{ font-size:13px }
+  .foot-mark .fm-sub,.foot-note{ display:none }
+  .foot-credit{ font-size:10.5px }
   body{background:#fff;font-size:10.5px}
   .wrap{max-width:100%;padding:0}
   /* keep the logo as a letterhead */
@@ -481,6 +575,18 @@ body.show-layman .layman-note{display:block}
 .factor .fnum{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin-top:6px}
 .why-foot{font-size:12px;color:var(--ink-faint);font-style:italic;margin-top:20px;line-height:1.55;
   border-top:1px solid var(--line);padding-top:16px}
+
+/* ============ reduced motion ============ ------------------------------------
+   Sitewide guard. The starfield already opts out on its own; this covers every
+   transition, animation and smooth-scroll added anywhere else, now or later. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    animation-delay:0ms !important;transition-duration:.01ms !important;
+    transition-delay:0ms !important}
+  html,body,.jump-inner,.varga-grid{scroll-behavior:auto !important}
+  .btn:active,.mini-btn:active,.celeb:active,.jump-inner a:active{transform:none !important}
+}
 </style>
 
 <!-- ============ LOGIN SCREEN ============ -->
@@ -540,14 +646,21 @@ body.show-layman .layman-note{display:block}
         <span class="uname">Signed in as <b id="userName"></b></span>
         <button class="theme-btn" id="logoutBtn" type="button">Sign out</button>
       </div>
-      <button class="theme-btn" id="laymanBtn" type="button" aria-pressed="false">📖 Plain English: Off</button>
+      <button class="theme-btn" id="laymanBtn" type="button" aria-pressed="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.8 5.2 9 4.5 6.5 4.5H4v13h2.5c2.5 0 4.3.7 5.5 2"/><path d="M12 6.5c1.2-1.3 3-2 5.5-2H20v13h-2.5c-2.5 0-4.3.7-5.5 2z"/><path d="M12 6.5v13"/></svg><span class="lbl">Plain English: Off</span></button>
       <button class="theme-btn" id="themeBtn" type="button">◐ Theme</button>
     </div>
   </div>
 </header>
 
 <div id="mobileBar"></div>
-<nav class="jump" id="jumpNav"><div class="wrap jump-inner" id="jumpInner"></div></nav>
+<nav class="jump" id="jumpNav" aria-label="Report sections">
+  <div class="wrap jump-rail" id="jumpRail">
+    <button class="jump-arrow" id="jumpPrev" type="button" aria-label="Scroll sections left">‹</button>
+    <div class="jump-inner" id="jumpInner"></div>
+    <button class="jump-arrow" id="jumpNext" type="button" aria-label="Scroll sections right">›</button>
+    <span class="jump-count" id="jumpCount" aria-hidden="true"></span>
+  </div>
+</nav>
 
 <main class="wrap">
   <!-- ============ INPUT ============ -->
@@ -630,7 +743,7 @@ body.show-layman .layman-note{display:block}
           <li><b>Sidereal (Nirayaṇa) zodiac.</b> Uses the fixed-star zodiac with the Lahiri (Chitrapakṣa) ayanāṁśa - the Government of India's Rāṣṭrīya Pañcāṅga standard, not the Western tropical zodiac.</li>
           <li><b>27 Nakṣatras &amp; Vimśottari Daśā.</b> The Moon's nakṣatra sets the 120-year daśā timeline exactly as the śāstra prescribes.</li>
           <li><b>Whole-sign Bhāvas, Parāśari &amp; Jaimini.</b> Houses, aspects (dṛṣṭi), yogas, kārakas, Ashtakavarga, Shadbala, vargas and doshas all follow the classical rules.</li>
-          <li><b>Full Pañcāṅga.</b> Tithi, Vāra, Nakṣatra, Yoga and Karaṇa are computed traditionally - the same five limbs a purohit reads. <small>Śrī Gaṇeśāya Namaḥ 🕉</small></li>
+          <li><b>Full Pañcāṅga.</b> Tithi, Vāra, Nakṣatra, Yoga and Karaṇa are computed traditionally - the same five limbs a purohit reads. <small>Śrī Gaṇeśāya Namaḥ <span class="om">ॐ</span></small></li>
         </ul>
       </div>
     </div>
@@ -645,4 +758,25 @@ body.show-layman .layman-note{display:block}
   <!-- ============ REPORT ============ -->
   <div id="report"></div>
 </main>
+
+<!-- ============ SITE FOOTER ============ -->
+<footer class="site-foot" id="siteFoot">
+  <div class="wrap foot-inner">
+    <div class="foot-mark">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="34" fill="none" stroke="var(--brass)" stroke-width="2" opacity=".65"/>
+        <g stroke="var(--brass)" stroke-width="2" opacity=".85">
+          <line x1="50" y1="8" x2="50" y2="92"/><line x1="8" y1="50" x2="92" y2="50"/>
+        </g>
+        <circle cx="50" cy="50" r="9" fill="var(--brass)"/>
+      </svg>
+      <div style="text-align:left">
+        <div class="fm-name">Jāthaka <span class="om">ॐ</span></div>
+        <div class="fm-sub">Lahiri sidereal · computed offline</div>
+      </div>
+    </div>
+    <div class="foot-credit"><span class="rule"></span>Powered by <b>Ayodhya Agarbatti</b><span class="rule"></span></div>
+    <p class="foot-note">Every chart on this page is computed on your own device from the astronomy-engine ephemeris - no internet, no AI, no tracking, and nothing sent to a server. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</p>
+  </div>
+</footer>
 </div><!-- /appWrap -->
