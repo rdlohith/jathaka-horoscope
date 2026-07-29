@@ -372,15 +372,26 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   .why-rule dt{font-size:7.5px;letter-spacing:.09em}
   .why-rule dd{font-size:9px;line-height:1.4}
   .why-rule dd.mono{font-size:8.5px}
+  /* instructions about the print dialog are meaningless once printed */
+  .screen-only{ display:none !important }
+  /* keep the tail matter compact so it rides up with the glossary instead of
+     claiming a near-empty final sheet */
+  .disc{ margin-top:8px;padding-top:6px;font-size:9px;line-height:1.4 }
   /* the sponsor credit rides along on the exported PDF as a compact colophon.
      To keep it screen-only instead, add .site-foot to the display:none rule above. */
-  .site-foot{ margin-top:18px;background:none;border-top:1px solid var(--brass);
+  .site-foot{ margin-top:6px;background:none;border-top:1px solid var(--brass);
     break-inside:avoid;page-break-inside:avoid }
-  .foot-inner{ padding:10px 0 0;gap:6px }
-  .foot-mark svg{ width:19px;height:19px }
-  .foot-mark .fm-name{ font-size:13px }
+  /* one line on paper, so the colophon fits under the last section instead of
+     reserving a sheet of its own */
+  .foot-inner{ padding:4px 0 0;flex-direction:row;justify-content:center;
+    align-items:center;gap:10px }
+  .foot-mark{ gap:6px }
+  .foot-mark svg{ width:13px;height:13px }
+  .foot-mark .fm-name{ font-size:10.5px }
   .foot-mark .fm-sub,.foot-note{ display:none }
-  .foot-credit{ font-size:10.5px }
+  .foot-credit{ font-size:9.5px }
+  .foot-credit .rule{ display:none }
+  .foot-credit:before{ content:"·";color:var(--brass);margin-right:2px }
   body{background:#fff;font-size:10.5px}
   .wrap{max-width:100%;padding:0}
   /* keep the logo as a letterhead */
