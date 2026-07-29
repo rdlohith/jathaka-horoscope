@@ -4,7 +4,7 @@ A single-page, **fully offline** Vedic (Jyotiṣa) horoscope calculator. Enter a
 place and it computes a complete **28-section Janma Kundali** - entirely in your browser, with **no
 server, no AI, and no network calls at runtime**.
 
-**Live site:** _enable GitHub Pages, then this becomes `https://<user>.github.io/<repo>/`_
+**Live site:** <https://rdlohith.github.io/jathaka-horoscope/> (GitHub Pages, `main` branch, root)
 
 ## What it computes
 
