@@ -7,11 +7,13 @@ page    = r("src/page.html")
 lib     = r("src/astronomy.browser.min.js")
 engine  = r("src/engine.js")
 engine2 = r("src/engine2.js")
+engine3 = r("src/engine3.js")
 ui      = r("src/ui.js")
 html = (page.rstrip() + "\n"
         + "<script>" + lib     + "</script>\n"
         + "<script>" + engine  + "</script>\n"
         + "<script>" + engine2 + "</script>\n"
+        + "<script>" + engine3 + "</script>\n"
         + "<script>" + ui      + "</script>\n")
 open(os.path.join(D, "index.html"), "w", encoding="utf-8").write(html)
 print("built index.html:", len(html), "bytes")

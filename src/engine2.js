@@ -166,6 +166,19 @@ function sunEvents(chart){
     return {riseJD:date2jd(rise.date),setJD:date2jd(set.date)};
   }catch(e){return null;}
 }
+/* Moonrise/moonset for the civil date of birth. The Moon can skip a rise or a set
+   on a given date (it drifts ~50 min a day), so either half may legitimately be
+   null - the caller renders a dash rather than inventing a time. */
+function moonEvents(chart){
+  try{
+    const dt=chart.input; const obs=new A.Observer(dt.lat,dt.lon,0);
+    const t0=A.MakeTime(new Date(Date.UTC(dt.y,dt.mo-1,dt.d,0,0,0)));
+    const rise=A.SearchRiseSet(A.Body.Moon,obs,+1,t0,1);
+    const set=A.SearchRiseSet(A.Body.Moon,obs,-1,t0,1);
+    if(!rise&&!set)return null;
+    return {riseJD:rise?date2jd(rise.date):null,setJD:set?date2jd(set.date):null};
+  }catch(e){return null;}
+}
 function gulika(chart){
   const ev=sunEvents(chart); if(!ev)return null;
   const dt=chart.input; const birthJD=chart.jd;
@@ -258,6 +271,15 @@ function doshas(chart){
     why:{rule:"The Sun or the Moon shares a sign with Rāhu or Ketu",
       chart:`Sun in ${J.SIGNS[P[0].sign]}, Moon in ${J.SIGNS[P[1].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`,
       tradition:"Ancestral-karma reading - traditional practice rather than a single canonical text"}});
+  // Guru Chandala - Jupiter with a node. Rahu gives the classic form; Ketu is the milder Ketu-Guru variant.
+  const gcNode=P[4].sign===P[7].sign?7:P[4].sign===P[8].sign?8:null;
+  const gcJupStrong=P[4].dig&&(P[4].dig.cls==='own'||P[4].dig.cls==='exalt');
+  out.push({name:"Guru Chāṇḍāla Yoga",status:gcNode===null?"Absent":(gcJupStrong?"Present (mild)":"Present"),
+    detail:gcNode===null?"Jupiter shares a sign with neither Rāhu nor Ketu - the combination does not form."
+      :`Jupiter is with ${gcNode===7?'Rāhu':'Ketu'} in ${J.SIGNS[P[4].sign]}. Classically read as unconventional wisdom - brilliance and rapid learning, but judgement, ethics and advice-taking need watching, and a guru's counsel may be resisted.${gcJupStrong?" Softened - Jupiter holds its own sign or exaltation and keeps its dignity.":""} Remedy: Guru worship, Thursday fast, Bṛhaspati mantra.`,
+    why:{rule:"Jupiter (guru) shares a sign with Rāhu or Ketu"+(gcJupStrong?"; softened when Jupiter is in its own sign or exaltation":""),
+      chart:`Jupiter in ${J.SIGNS[P[4].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`+(gcJupStrong?`; Jupiter is ${P[4].dig.label.toLowerCase()}`:''),
+      tradition:"Guru Chāṇḍāla - classical node-affliction reading (Parāśari lineage)"}});
   // Kala Sarpa
   const rl=P[7].lon; let side=null,ksp=true;
   for(let i=0;i<7;i++){const x=norm(P[i].lon-rl);if(side===null)side=x<180;else if((x<180)!==side){ksp=false;break;}}
@@ -474,6 +496,9 @@ function healthAnalysis(chart){
 
 /* expose */
 Object.assign(J,{panchanga,avakhada,functionalNature,aspects,avasthas,compoundRel,jaimini,ISHTA_DEV,
-  upagrahas,gulika,sunEvents,shadbala,doshas,sadeSati,gochara,nearTerm,bhavaChalit,transitLon,ownsHouses,
-  marriageTiming,careerTiming,healthAnalysis,NAISARGIKA,REQ});
+  upagrahas,gulika,sunEvents,moonEvents,shadbala,doshas,sadeSati,gochara,nearTerm,bhavaChalit,transitLon,ownsHouses,
+  marriageTiming,careerTiming,healthAnalysis,NAISARGIKA,REQ,
+  /* raw tables the compatibility module (engine3) matches on - shared so the
+     Avakhada Chakra shown in the report and the Guṇa Milan read the same data */
+  AVK:{NAK_YONI,NAK_GANA,NAK_NADI,VARNA,VASHYA,NAT_FRIEND}});
 })();

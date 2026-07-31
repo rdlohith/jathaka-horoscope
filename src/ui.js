@@ -9,6 +9,11 @@ const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 const fmtDate = d => `${String(d.getUTCDate()).padStart(2,'0')} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 const jdFmt = jd => fmtDate(jd2date(jd));
 const jdMY = jd => {const d=jd2date(jd);return `${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;};
+/* JD -> local clock time (HH:MM) at the birth place. Shifting the JD by the zone
+   offset and then reading the UTC fields gives the local wall clock directly. */
+const jdLocalTime = (jd,tz) => {if(jd==null)return '—';
+  const d=jd2date(jd+tz/24+0.5/1440);  // +30s so we round to the nearest minute
+  return `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;};
 const nowJD = () => J2000+(Date.now()-EPOCH)/86400000;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SS=J.SIGN_SHORT, SG=J.SIGNS, SA=J.SIGN_SANS, PL=J.PLANETS, PG=J.PL_GLYPH, PSA=J.PL_SANS, SL=J.SIGN_LORD;
@@ -147,7 +152,7 @@ function renderShowcase(){
     const c=CELEBS.find(x=>x[0]===b.dataset.name);if(!c)return;
     $('#name').value=c[0];$('#dob').value=c[2];$('#tob').value=c[3];$('#gender').value=c[1]==='F'?'female':'male';
     placeInput.value=c[4];$('#lat').value=c[5];$('#lon').value=c[6];$('#tz').value=c[7];
-    selectedZone=zoneForCity((c[4].split(',')[0]||'').trim(),c[4]);
+    mainPlace.zone=zoneForCity((c[4].split(',')[0]||'').trim(),c[4]);
     $('#placeHint').textContent=`✓ ${c[5].toFixed(4)}°  ${c[6].toFixed(4)}°  ·  UTC${c[7]>=0?'+':''}${c[7]}${c[3]==='12:00'?'  · time approx (noon)':''}`;
     doCompute();
   }));
@@ -184,9 +189,14 @@ function enterApp(user){
   else{badge.style.display='none';$('#history').style.display='none';}
 }
 function initLogin(){
-  // a shared ?c= link opens straight into the chart (as guest)
-  try{const cs=new URLSearchParams(location.search).get('c');
-    if(cs){const o=decodeChart(cs);if(o){enterApp(null);if(applyShared(o))doCompute();return;}}}catch(e){}
+  // a shared ?c= link opens straight into the chart (as guest); ?c=&m= opens a match
+  try{const q=new URLSearchParams(location.search), cs=q.get('c'), ms=q.get('m');
+    if(cs){const o=decodeChart(cs), p=ms?decodeChart(ms):null;
+      if(o){enterApp(null);
+        setMode(p?'match':'single');
+        const ok=applyShared(o)&&(!p||applySharedPartner(p));
+        if(ok)doCompute();
+        return;}}}catch(e){}
   const remembered=LS.get('jathaka-session');
   // tabs
   $$('.auth-tab').forEach(t=>t.addEventListener('click',()=>{
@@ -285,7 +295,6 @@ function zoneOffset(zone,y,mo,d,hh,mi){ // returns UTC offset in hours for that 
       inst=Date.UTC(y,mo-1,d,hh,mi)-off*3600000;}
     return off;
   }catch(e){return null;}}
-let selectedZone=null;
 function resolveTz(tz,zone,y,mo,d,hh,mi){ // prefer the DST-aware offset when a known zone is selected
   if(!zone)return {tz,dst:false};
   const o=zoneOffset(zone,y,mo,d,hh,mi);
@@ -298,41 +307,89 @@ function encodeChart(i){try{return btoa(unescape(encodeURIComponent(JSON.stringi
   {n:i.name,d:`${i.y}-${i.mo}-${i.d}`,t:`${i.hh}:${i.mi}`,la:i.lat,lo:i.lon,tz:i.tz,g:i.gender,p:i.place}))));}catch(e){return '';}}
 function decodeChart(s){try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return null;}}
 function shareUrl(i){return location.origin+location.pathname+'?c='+encodeChart(i);}
+/* a match link carries both nativities - `c` is the groom's, `m` the bride's */
+function shareMatchUrl(g,b){return shareUrl(g)+'&m='+encodeChart(b);}
 function applyShared(o){if(!o)return false;
   const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
   $('#name').value=o.n||'';$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   $('#tob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;$('#gender').value=o.g||'na';
-  $('#place').value=o.p||'';$('#lat').value=o.la;$('#lon').value=o.lo;$('#tz').value=o.tz;selectedZone=null;
+  $('#place').value=o.p||'';$('#lat').value=o.la;$('#lon').value=o.lo;$('#tz').value=o.tz;mainPlace.zone=null;
   $('#placeHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
+function applySharedPartner(o){if(!o)return false;
+  const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
+  $('#pName').value=o.n||'';$('#pDob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  $('#pTob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;
+  $('#pPlace').value=o.p||'';$('#pLat').value=o.la;$('#pLon').value=o.lo;$('#pTz').value=o.tz;partnerPlace.zone=null;
+  $('#pPlaceHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
 
-/* ======================= autocomplete / form ======================= */
-const placeInput=$('#place'), acList=$('#acList');
-let acIdx=-1, acMatches=[];
+/* ======================= autocomplete / form =======================
+   Two nativities can be entered - the main one and an optional partner for
+   compatibility matching - so the place autocomplete is built as a factory over
+   an id prefix rather than bound to one set of fields. Each instance owns its own
+   resolved timezone, since the two births can sit in different zones. */
 function searchCities(q){q=q.trim().toLowerCase();if(q.length<2)return[];
   const s=[],c=[];for(const x of CITIES){const n=x[0].toLowerCase();
     if(n.startsWith(q))s.push(x);else if(n.includes(q)||x[1].toLowerCase().includes(q))c.push(x);}
   return s.concat(c).slice(0,8);}
-function renderAC(){if(!acMatches.length){acList.classList.remove('show');return;}
-  acList.innerHTML=acMatches.map((c,i)=>`<div class="ac-item${i===acIdx?' active':''}" data-i="${i}">${c[0]} <small>· ${c[1]} · ${c[2].toFixed(2)}° ${c[3].toFixed(2)}° · UTC${c[4]>=0?'+':''}${c[4]}</small></div>`).join('');
-  acList.classList.add('show');}
-placeInput.addEventListener('input',()=>{selectedZone=null;acMatches=searchCities(placeInput.value);acIdx=-1;renderAC();});
-placeInput.addEventListener('keydown',e=>{if(!acMatches.length)return;
-  if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,acMatches.length-1);renderAC();e.preventDefault();}
-  else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);renderAC();e.preventDefault();}
-  else if(e.key==='Enter'&&acIdx>=0){pickCity(acMatches[acIdx]);e.preventDefault();}
-  else if(e.key==='Escape')acList.classList.remove('show');});
-acList.addEventListener('click',e=>{const it=e.target.closest('.ac-item');if(it)pickCity(acMatches[+it.dataset.i]);});
-document.addEventListener('click',e=>{if(!e.target.closest('.field'))acList.classList.remove('show');});
-function pickCity(c){placeInput.value=c[0]+', '+c[1];acList.classList.remove('show');
-  $('#lat').value=c[2];$('#lon').value=c[3];$('#tz').value=c[4];
-  selectedZone=zoneForCity(c[0],c[1]);
-  const z=selectedZone?'  ·  '+selectedZone+' (auto DST)':'';
-  $('#placeHint').textContent=`✓ ${c[2].toFixed(4)}°  ${c[3].toFixed(4)}°  ·  UTC${c[4]>=0?'+':''}${c[4]}${z}`;}
-// manual edits to coordinates/timezone/place text disable the auto-zone (respect the user's own numbers)
-['lat','lon','tz'].forEach(id=>$('#'+id).addEventListener('input',()=>{selectedZone=null;}));
-$('#manualToggle').addEventListener('click',()=>{const on=$('#mLat').classList.toggle('show');
-  $('#mLon').classList.toggle('show');$('#mTz').classList.toggle('show');
-  $('#manualToggle').textContent=(on?'▾':'▸')+' Enter latitude / longitude / timezone manually';});
+function makePlaceField(ids){
+  const placeInput=$('#'+ids.place), acList=$('#'+ids.acList), hint=$('#'+ids.hint);
+  let acIdx=-1, acMatches=[];
+  const api={zone:null};
+  function renderAC(){if(!acMatches.length){acList.classList.remove('show');return;}
+    acList.innerHTML=acMatches.map((c,i)=>`<div class="ac-item${i===acIdx?' active':''}" data-i="${i}">${c[0]} <small>· ${c[1]} · ${c[2].toFixed(2)}° ${c[3].toFixed(2)}° · UTC${c[4]>=0?'+':''}${c[4]}</small></div>`).join('');
+    acList.classList.add('show');}
+  api.pick=function(c){placeInput.value=c[0]+', '+c[1];acList.classList.remove('show');
+    $('#'+ids.lat).value=c[2];$('#'+ids.lon).value=c[3];$('#'+ids.tz).value=c[4];
+    api.zone=zoneForCity(c[0],c[1]);
+    const z=api.zone?'  ·  '+api.zone+' (auto DST)':'';
+    hint.textContent=`✓ ${c[2].toFixed(4)}°  ${c[3].toFixed(4)}°  ·  UTC${c[4]>=0?'+':''}${c[4]}${z}`;};
+  placeInput.addEventListener('input',()=>{api.zone=null;acMatches=searchCities(placeInput.value);acIdx=-1;renderAC();});
+  placeInput.addEventListener('keydown',e=>{if(!acMatches.length)return;
+    if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,acMatches.length-1);renderAC();e.preventDefault();}
+    else if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);renderAC();e.preventDefault();}
+    else if(e.key==='Enter'&&acIdx>=0){api.pick(acMatches[acIdx]);e.preventDefault();}
+    else if(e.key==='Escape')acList.classList.remove('show');});
+  acList.addEventListener('click',e=>{const it=e.target.closest('.ac-item');if(it)api.pick(acMatches[+it.dataset.i]);});
+  document.addEventListener('click',e=>{if(!e.target.closest('.field'))acList.classList.remove('show');});
+  // manual edits to coordinates/timezone disable the auto-zone (respect the user's own numbers)
+  [ids.lat,ids.lon,ids.tz].forEach(id=>$('#'+id).addEventListener('input',()=>{api.zone=null;}));
+  $('#'+ids.manualToggle).addEventListener('click',()=>{
+    const on=$('#'+ids.mLat).classList.toggle('show');
+    $('#'+ids.mLon).classList.toggle('show');$('#'+ids.mTz).classList.toggle('show');
+    $('#'+ids.manualToggle).textContent=(on?'▾':'▸')+' Enter latitude / longitude / timezone manually';});
+  return api;
+}
+const mainPlace=makePlaceField({place:'place',acList:'acList',hint:'placeHint',lat:'lat',lon:'lon',tz:'tz',
+  manualToggle:'manualToggle',mLat:'mLat',mLon:'mLon',mTz:'mTz'});
+const partnerPlace=makePlaceField({place:'pPlace',acList:'pAcList',hint:'pPlaceHint',lat:'pLat',lon:'pLon',tz:'pTz',
+  manualToggle:'pManualToggle',mLat:'pMLat',mLon:'pMLon',mTz:'pMTz'});
+const placeInput=$('#place');
+const pickCity=c=>mainPlace.pick(c);
+
+/* ---- mode switch: one horoscope, or two charts matched ----
+   The two modes produce entirely different reports, so the nav, the form labels
+   and the compute path all key off this one value. */
+let appMode=LS.get('jathaka-mode')==='match'?'match':'single';
+function setMode(m){
+  appMode=(m==='match')?'match':'single';
+  LS.set('jathaka-mode',appMode);
+  document.body.classList.toggle('mode-match',appMode==='match');
+  $('#modeSingle').classList.toggle('active',appMode==='single');
+  $('#modeMatch').classList.toggle('active',appMode==='match');
+  $('#modeSingle').setAttribute('aria-selected',appMode==='single'?'true':'false');
+  $('#modeMatch').setAttribute('aria-selected',appMode==='match'?'true':'false');
+  $('#formEyebrow').textContent=appMode==='match'?'First nativity':'Birth particulars';
+  $('#formTitle').textContent=appMode==='match'?"Groom's janma details":'Enter janma details';
+  $('#calcBtn').textContent=appMode==='match'?'Match the two charts':'Cast the chart';
+  $('#sampleBtn').textContent=appMode==='match'?'Load a sample pair':'Load a sample';
+  $('#formErr').textContent='';
+  // a report cast in the other mode no longer matches the form - clear it
+  $('#report').innerHTML='';$('#report').classList.remove('show');
+  $('#jumpNav').classList.remove('show');
+  const mb=$('#mobileBar');if(mb)mb.classList.remove('show');
+}
+$('#modeSingle').addEventListener('click',()=>setMode('single'));
+$('#modeMatch').addEventListener('click',()=>setMode('match'));
 (function(){let t=LS.get('jathaka-theme');if(t)document.documentElement.setAttribute('data-theme',t);
   $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
     const nx=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',nx);LS.set('jathaka-theme',nx);if(window._stars)window._stars();});})();
@@ -342,41 +399,76 @@ $('#manualToggle').addEventListener('click',()=>{const on=$('#mLat').classList.t
     const lbl=btn.querySelector('.lbl');if(lbl)lbl.textContent=on?'Plain English: On':'Plain English: Off';}
   set(LS.get('jathaka-layman')===true);
   btn.addEventListener('click',()=>{const on=!document.body.classList.contains('show-layman');set(on);LS.set('jathaka-layman',on);});})();
-$('#sampleBtn').addEventListener('click',()=>{$('#name').value='Sample Chart';$('#dob').value='2000-01-01';
+$('#sampleBtn').addEventListener('click',()=>{
+  if(appMode==='match'){
+    $('#name').value='Sample Groom';$('#dob').value='1994-03-17';$('#tob').value='09:25';
+    pickCity(["Bengaluru","Karnataka, India",12.9716,77.5946,5.5]);
+    $('#pName').value='Sample Bride';$('#pDob').value='1996-11-02';$('#pTob').value='18:40';
+    partnerPlace.pick(["Chennai","Tamil Nadu, India",13.0827,80.2707,5.5]);
+    return;}
+  $('#name').value='Sample Chart';$('#dob').value='2000-01-01';
   $('#tob').value='12:00';$('#gender').value='male';pickCity(["Bengaluru","Karnataka, India",12.96,77.66,5.5]);});
 
 $('#calcBtn').addEventListener('click',doCompute);
+/* Validate and normalise one set of birth fields. Returns the input object, or
+   throws with a message meant for the user. `who` names the nativity in errors so
+   it is clear which of the two forms needs fixing. */
+function readNativity(ids,place,who,fallbackName,forcedGender){
+  const bad=m=>{throw new Error(who?`${who}: ${m}`:m);};
+  const dob=$('#'+ids.dob).value, tob=$('#'+ids.tob).value;
+  if(!dob)bad('please enter a date of birth.');
+  if(!tob)bad('please enter a time of birth - the Lagna depends on it.');
+  let lat=parseFloat($('#'+ids.lat).value),lon=parseFloat($('#'+ids.lon).value),tz=parseFloat($('#'+ids.tz).value);
+  if(isNaN(lat)||isNaN(lon))bad('pick a birth place, or open the manual panel and enter latitude & longitude.');
+  if(isNaN(tz))tz=5.5;
+  if(lat<-90||lat>90)bad('latitude must be between -90° and 90°.');
+  if(lon<-180||lon>180)bad('longitude must be between -180° and 180°.');
+  if(tz<-14||tz>14)bad('timezone must be between -14 and +14 hours from UTC.');
+  const[y,mo,d]=dob.split('-').map(Number),[hh,mi]=tob.split(':').map(Number);
+  if(!y||y<1700||y>2200)bad('please enter a birth year between 1700 and 2200 (the ephemeris range).');
+  const rz=resolveTz(tz,place.zone,y,mo,d,hh,mi);tz=rz.tz; // DST-aware offset when a known zone is selected
+  return {y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:place.zone,
+    name:$('#'+ids.name).value.trim()||fallbackName,
+    gender:forcedGender||(ids.gender?$('#'+ids.gender).value:'na'),
+    place:$('#'+ids.place).value.trim()||`${lat.toFixed(3)}°, ${lon.toFixed(3)}°`};
+}
+function castChart(input){
+  const chart=J.buildChart(input);
+  J.bhavaChalit(chart); // sets chart._mc
+  const ev=J.sunEvents(chart); chart._dayBirth=ev?(chart.jd>=ev.riseJD&&chart.jd<ev.setJD):true;
+  return chart;
+}
+const MAIN_IDS={dob:'dob',tob:'tob',lat:'lat',lon:'lon',tz:'tz',name:'name',gender:'gender',place:'place'};
+const PARTNER_IDS={dob:'pDob',tob:'pTob',lat:'pLat',lon:'pLon',tz:'pTz',name:'pName',place:'pPlace'};
 function doCompute(){
   const err=$('#formErr');err.textContent='';
-  const dob=$('#dob').value,tob=$('#tob').value;
-  if(!dob){err.textContent='Please enter a date of birth.';return;}
-  if(!tob){err.textContent='Please enter a time of birth - the Lagna depends on it.';return;}
-  let lat=parseFloat($('#lat').value),lon=parseFloat($('#lon').value),tz=parseFloat($('#tz').value);
-  if(isNaN(lat)||isNaN(lon)){err.textContent='Pick a birth place, or open the manual panel and enter latitude & longitude.';return;}
-  if(isNaN(tz))tz=5.5;
-  if(lat<-90||lat>90){err.textContent='Latitude must be between -90° and 90°.';return;}
-  if(lon<-180||lon>180){err.textContent='Longitude must be between -180° and 180°.';return;}
-  if(tz<-14||tz>14){err.textContent='Timezone must be between -14 and +14 hours from UTC.';return;}
-  const[y,mo,d]=dob.split('-').map(Number),[hh,mi]=tob.split(':').map(Number);
-  if(!y||y<1700||y>2200){err.textContent='Please enter a birth year between 1700 and 2200 (the ephemeris range).';return;}
-  const rz=resolveTz(tz,selectedZone,y,mo,d,hh,mi);tz=rz.tz; // DST-aware offset when a known zone is selected
-  const input={y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:selectedZone,name:$('#name').value.trim()||'This nativity',
-    gender:$('#gender').value,place:placeInput.value.trim()||`${lat.toFixed(3)}°, ${lon.toFixed(3)}°`};
-  lastInput=input;
-  let chart;
-  try{chart=J.buildChart(input);
-    J.bhavaChalit(chart); // sets chart._mc
-    const ev=J.sunEvents(chart); chart._dayBirth=ev?(chart.jd>=ev.riseJD&&chart.jd<ev.setJD):true;
+  const match=appMode==='match';
+  let gInput,gChart,bInput=null,bChart=null;
+  try{
+    // in match mode the two roles ARE the gender the classical tables are reckoned from
+    gInput=readNativity(MAIN_IDS,mainPlace,match?'Groom':'',match?'The groom':'This nativity',match?'male':null);
+    if(match)bInput=readNativity(PARTNER_IDS,partnerPlace,'Bride','The bride','female');
+  }catch(e){err.textContent=e.message;return;}
+  lastInput=gInput;
+  try{gChart=castChart(gInput);
+    if(bInput)bChart=castChart(bInput);
   }catch(e){err.textContent='Computation error: '+e.message;console.error(e);return;}
-  saveChartForUser(input);
-  renderReport(chart,input);
+  saveChartForUser(gInput);
+  if(bInput)saveChartForUser(bInput);
+  if(match)renderMatchReport(gChart,gInput,bChart,bInput);
+  else renderReport(gChart,gInput);
   $('#report').classList.add('show');$('#jumpNav').classList.add('show');
-  requestAnimationFrame(()=>smoothTo($('#sec-sum')));
+  requestAnimationFrame(()=>smoothTo($('#sec-'+SECTIONS[0][0])));
 }
 
 /* ======================= small helpers ======================= */
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
-const secHead=(n,t,note)=>`<div class="sec-head"><span class="num">${n}</span><h2>${t}</h2>${note?`<span class="note">${note}</span>`:''}</div>`;
+/* The section number is the position in the active nav list, so inserting a
+   section (Marriage Compatibility appears only for a two-chart report) renumbers
+   the rest instead of leaving a gap. */
+const secHead=(id,t,note)=>{const i=SECTIONS.findIndex(s=>s[0]===id);
+  const n=String(i>=0?i+1:SECTIONS.length+1).padStart(2,'0');
+  return `<div class="sec-head"><span class="num">${n}</span><h2>${t}</h2>${note?`<span class="note">${note}</span>`:''}</div>`;};
 const houseFrom=(fromSign,sign)=>((sign-fromSign)%12+12)%12+1;
 const ord=n=>n+({1:'st',2:'nd',3:'rd'}[n%10>3||[11,12,13].includes(n%100)?0:n%10]||'th');
 
@@ -458,13 +550,21 @@ function vargaPlacements(v){const it=v.items.map(x=>({glyph:PG[x.i],sign:x.sign,
   it.push({glyph:'La',sign:v.ascSign,house:1,cls:'pl-asc'});return it;}
 
 /* ======================= SECTION LIST + NAV ======================= */
-const SECTIONS=[['sum','At a Glance'],['birth','Birth Chart'],['snapshot','Planetary Condition'],
+const BASE_SECTIONS=[['sum','At a Glance'],['birth','Birth Chart'],['snapshot','Planetary Condition'],
 ['ashtaka','Ashtakavarga'],['bhava','House-Lords'],['aspects','Aspects'],['karaka','Chara Kārakas'],
 ['yoga','Yogas'],['states','Planetary States'],['jaimini','Jaimini Points'],['strength','Strength & Upagrahas'],
 ['shadbala','Shadbala'],['doshas','Doshas'],['good','Strengths'],['bad','Challenges'],['life','Life Readings'],
+['career','Career & Finance'],['learning','Education & Lifestyle'],
 ['people','People & Parents'],['chrono','Life Chronology'],['chalit','Bhava Chalit'],['depth','Āyur · Spouse · Children'],
 ['vargas','Divisional Charts'],['dasha','Daśā Roadmap'],['sadesati','Sade-Sati & Transits'],
 ['remedies','Remedies'],['gochara','Year-by-Year'],['nearterm','Near-Term'],['verify','Verification'],['glossary','Glossary']];
+/* Compatibility mode is its own report with its own sections, so the nav, the
+   scroll-spy and the section numbering all work off whichever list the last
+   render actually used. */
+const MATCH_SECTIONS=[['mglance','Match at a Glance'],['mkoota','Ashtakoota (36 pts)'],
+['mgates','Nāḍī & Bhakūṭa Doshas'],['mlayers','Beyond the Kootas'],['mareas','Area by Area'],
+['mcharts','Both Charts · D-1 & D-9'],['mdasha','Daśā & Timing'],['mremedy','Remedies & Next Steps']];
+let SECTIONS=BASE_SECTIONS;
 
 /* plain-English one-liner for each section (shown when "Plain English" is on) */
 const LAYMAN={
@@ -484,10 +584,20 @@ doshas:"Well-known 'afflictions' (Manglik, Kala-Sarpa, etc.) - present or absent
 good:"The chart's genuine strengths, in plain sentences.",
 bad:"The chart's sensitive areas and challenges, each with how to soften it.",
 life:"Plain-language readings for personality, career, money, marriage, children, health and inner life.",
+career:"Work and money in detail - what kind of job suits you, business or salary, how income and savings tend to behave, and property.",
+learning:"Study, foreign travel, where you may settle, and the lifestyle the chart leans toward.",
 people:"What the chart suggests about your spouse, children, mother and father.",
 chrono:"Your life told as chapters, one per major planetary period, against your age.",
 chalit:"A refined house chart using exact cusps - sometimes a planet shifts one house.",
 depth:"Deeper looks at lifespan themes, the spouse, and children.",
+mglance:"The headline: the traditional score out of 36, what it means in words, and the specific strong and weak points of this pairing.",
+mkoota:"The 36-point score broken into its eight parts, showing exactly where points were won and lost.",
+mgates:"The two heavy doshas - and, just as important, whether the classical rules that cancel them apply here.",
+mlayers:"What the 36 points miss: the two whole charts read against each other, including the Navāṁśa, which is the chart the tradition actually uses to judge a marriage.",
+mareas:"A separate verdict for each part of married life - feelings, thinking, talking, family, money, staying power and physical fit.",
+mcharts:"Both birth charts side by side, in the two forms that matter for marriage: the main chart and the Navāṁśa.",
+mdasha:"Which planetary periods each of you is running now and next, and what that says about timing.",
+mremedy:"Traditional observances where a dosha stands, and the specific things worth asking a human astrologer about.",
 vargas:"Zoom-in charts, each dedicated to one life-area (marriage, career, health, and more).",
 dasha:"Your life timeline: which planet 'rules' each stretch of years, and the sub-periods within.",
 sadesati:"Where the slow planets are transiting now, including Saturn's famous 7.5-year Sade-Sati.",
@@ -533,11 +643,13 @@ function smoothTo(target){if(!target)return;
 
 /* ======================= RENDER ======================= */
 function renderReport(chart,input){
+  SECTIONS=BASE_SECTIONS;
   const R=$('#report');R.innerHTML='';
   const P=chart.planets, moon=P[1], sun=P[0], asc=chart.ascSign;
   const pan=J.panchanga(chart), ava=J.avakhada(chart), fn=J.functionalNature(chart);
   const asp=J.aspects(chart), avs=J.avasthas(chart), jm=J.jaimini(chart), upg=J.upagrahas(chart);
   const gul=J.gulika(chart), sbala=J.shadbala(chart), dsh=J.doshas(chart);
+  const sev=J.sunEvents(chart), mev=J.moonEvents(chart), lt=jd=>jdLocalTime(jd,input.tz);
   const av=J.ashtakavarga(chart), vim=J.vimshottari(moon.lon,chart.jd), yog=J.detectYogas(chart);
   const ck=J.charaKarakas(P), chalit=J.bhavaChalit(chart);
   const ss=J.sadeSati(chart,nowJD());
@@ -581,7 +693,7 @@ function renderReport(chart,input){
   const luckyGem=[...new Set([lagnaLord,ninthLord].map(p=>PATTR[p].gem))];
   const luckyDir=[...new Set(favP.map(p=>PATTR[p].dir))].filter(x=>x!=='-');
   const syl=NAME_SYL[moon.nak.idx];
-  add('sum',secHead('01','Janma Kuṇḍali - At a Glance')+
+  add('sum',secHead('sum','Janma Kuṇḍali - At a Glance')+
     `<div class="panel hero"><div class="eyebrow">Complete Vedic Horoscope</div>
       <div class="name">${esc(input.name)}</div>
       <div class="born">${esc(born)} · UTC${input.tz>=0?'+':''}${input.tz}${input.dst?' (DST-adjusted)':''} · ${esc(input.place)} · ${pan.vaara}, ${pan.tithi}</div>
@@ -618,7 +730,7 @@ function renderReport(chart,input){
   P.forEach(p=>{const flags=[];if(p.retro&&p.i>=2&&p.i<=6)flags.push('<span class="pill retro">R</span>');
     if(p.combust)flags.push('<span class="pill comb">Comb</span>');if(p.dig)flags.push(dignOf(p));
     posRows+=`<tr><td class="glyph">${PSA[p.i]} <span class="muted">${p.name}</span></td><td>${SA[p.sign]} <small class="muted">(${SS[p.sign]})</small></td><td class="num">${J.dms(p.lon%30)}</td><td class="num">${p.house}</td><td>${p.nak.name}-${p.nak.pada}</td><td>${PL[SL[p.sign]]}</td><td>${flags.join(' ')||'<span class="muted">-</span>'}</td></tr>`;});
-  add('birth',secHead('02','Vedic Birth Chart')+
+  add('birth',secHead('birth','Vedic Birth Chart')+
     `<div class="panch-grid">
       <div class="panch"><span>Tithi</span><b>${pan.tithi}</b></div>
       <div class="panch"><span>Vaara</span><b>${pan.vaara}</b></div>
@@ -626,9 +738,14 @@ function renderReport(chart,input){
       <div class="panch"><span>Nitya Yoga</span><b>${pan.yoga}</b></div>
       <div class="panch"><span>Sun sign (Vedic)</span><b>${SG[sun.sign]}</b></div>
       <div class="panch"><span>Sun sign (Western)</span><b>${SG[pan.sunSignWestern]}</b></div>
-      <div class="panch"><span>Ayanāṁśa</span><b>${J.ayanamsa(chart.jd).toFixed(4)}°</b></div>
+      <div class="panch"><span>Sunrise</span><b>${lt(sev&&sev.riseJD)}</b></div>
+      <div class="panch"><span>Sunset</span><b>${lt(sev&&sev.setJD)}</b></div>
+      <div class="panch"><span>Moonrise</span><b>${lt(mev&&mev.riseJD)}</b></div>
+      <div class="panch"><span>Moonset</span><b>${lt(mev&&mev.setJD)}</b></div>
+      <div class="panch"><span>Ayanāṁśa (Lahiri)</span><b>${J.ayanamsa(chart.jd).toFixed(4)}°</b></div>
       <div class="panch"><span>Lagna lord</span><b>${PL[lagnaLord]} (house ${P[lagnaLord].house})</b></div>
     </div>
+    <p class="hint">Rise/set times are local clock time at the birth place (UTC${input.tz>=0?'+':''}${input.tz}${input.dst?', DST applied':''}), computed for the civil date of birth. A dash means the body did not rise or set on that date at that latitude. Sidereal positions use the <b>Lahiri (Chitrapakṣa) ayanāṁśa</b>.</p>
     <div class="chart-row" style="margin-top:20px">
       <div class="panel chart-card"><h3>Rāśi · North Indian</h3>${northChart(asc,d1Placements(chart))}</div>
       <div class="panel chart-card"><h3>Rāśi · South Indian</h3>${southChart(asc,d1Placements(chart))}</div>
@@ -648,7 +765,7 @@ function renderReport(chart,input){
     condRows+=`<tr><td class="glyph">${PL[p.i]}</td><td>${SG[p.sign]}</td><td>${cond} in ${ord(p.house)}</td><td class="muted">${conditionNote(p,asc,fn)}</td></tr>`;});
   const fbText=fn.benefics.map(p=>PL[p]).join(', ')||'-';
   const fmText=fn.malefics.map(p=>PL[p]).join(', ')||'-';
-  add('snapshot',secHead('03','Chart Snapshot - Planetary Condition')+
+  add('snapshot',secHead('snapshot','Chart Snapshot - Planetary Condition')+
     `<div class="tbl-wrap"><table><thead><tr><th>Planet</th><th>Sign</th><th>Dignity / Strength</th><th>Note</th></tr></thead><tbody>${condRows}</tbody></table></div>
     <p class="para">Functional nature for ${SA[asc]} Lagna: ${fn.yogakaraka.length?'Yogakāraka = '+fn.yogakaraka.map(p=>PL[p]).join(', ')+'. ':'No single Yogakāraka. '}Best functional benefics: <b>${fbText}</b> (trikona lords). Functional malefics: <b>${fmText}</b> (dusthāna/growth-house lords). Marakas (2nd/7th lords): ${fn.marakas.map(p=>PL[p]).join(', ')||'-'}.</p>`);
 
@@ -663,7 +780,7 @@ function renderReport(chart,input){
   let head='<tr><th>Planet</th>';for(let s=0;s<12;s++)head+=`<th>${SS[s]}</th>`;head+='<th>Σ</th></tr>';
   let body='';for(let p=0;p<7;p++){body+=`<tr><td>${PL[p]}</td>`;for(let s=0;s<12;s++)body+=`<td>${av.bav[p][s]}</td>`;body+=`<td class="av-sav">${av.bav[p].reduce((a,b)=>a+b,0)}</td></tr>`;}
   body+='<tr class="av-sav"><td>SAV</td>';for(let s=0;s<12;s++)body+=`<td style="${heat(av.sav[s])}">${av.sav[s]}</td>`;body+=`<td>${savTot}</td></tr>`;
-  add('ashtaka',secHead('04','Strength of Each House - Ashtakavarga','total '+savTot)+
+  add('ashtaka',secHead('ashtaka','Strength of Each House - Ashtakavarga','total '+savTot)+
     `<div class="panel bar-wrap"><div class="bar-title">Sarvashtakavarga - benefic bindus per house</div><div class="bars">${bars}</div></div>
     <div class="tbl-wrap av-wrap" style="margin-top:18px"><table class="av"><thead>${head}</thead><tbody>${body}</tbody></table></div>
     <p class="hint">Strongest sign: <b>${SG[av.sav.indexOf(maxS)]}</b> (${maxS}); weakest: <b>${SG[av.sav.indexOf(minS)]}</b> (${minS}). BAV totals are the classical constants Sun 48 · Moon 49 · Mars 39 · Mercury 54 · Jupiter 56 · Venus 52 · Saturn 39.</p>`);
@@ -671,35 +788,35 @@ function renderReport(chart,input){
   /* ---------- 05 HOUSE-LORDS ---------- */
   let hlRows='';for(let h=1;h<=12;h++){const sign=(asc+h-1)%12,lord=SL[sign],sits=P[lord].house;
     hlRows+=`<tr><td>${ord(h)} ${['Self','Wealth/Family','Courage/Siblings','Home/Mother','Children/Mind','Health/Debts','Spouse','Longevity','Fortune','Career','Gains','Loss/Moksha'][h-1]}</td><td>${SG[sign]}</td><td>${PL[lord]}</td><td>${ord(sits)}</td><td class="muted">${HOUSE_THEME[h-1]} feeds ${HOUSE_THEME[sits-1]}</td></tr>`;}
-  add('bhava',secHead('05','Bhava (House-Lord) Analysis')+
+  add('bhava',secHead('bhava','Bhava (House-Lord) Analysis')+
     `<p class="para">Where each house-lord sits shows how the affairs of one house feed another.</p>
     <div class="tbl-wrap"><table><thead><tr><th>House</th><th>Sign</th><th>Lord</th><th>Sits in</th><th>Indicates</th></tr></thead><tbody>${hlRows}</tbody></table></div>`);
 
   /* ---------- 06 ASPECTS ---------- */
   let aspRows='';asp.forEach(a=>{aspRows+=`<tr><td class="glyph">${PL[a.i]} <span class="muted">(${ord(a.house)})</span></td><td>${a.aspects.map(ord).join(', ')}</td><td class="muted">${aspectNote(a,P,asc)}</td></tr>`;});
-  add('aspects',secHead('06','Planetary Aspects (Graha Dṛṣṭi)')+
+  add('aspects',secHead('aspects','Planetary Aspects (Graha Dṛṣṭi)')+
     `<p class="para">Every planet aspects the 7th from itself; Mars also the 4th & 8th, Jupiter the 5th & 9th, Saturn the 3rd & 10th, the nodes the 5th & 9th (whole-sign).</p>
     <div class="tbl-wrap"><table><thead><tr><th>Planet (house)</th><th>Aspects houses</th><th>Significance</th></tr></thead><tbody>${aspRows}</tbody></table></div>`);
 
   /* ---------- 07 CHARA KARAKAS ---------- */
   let ckRows='';const CKM={Atmakaraka:'soul, self, core desire',Amatyakaraka:'career, mind, counsel',Bhratrukaraka:'siblings, courage, guru',Matrukaraka:'mother, home, heart',Putrakaraka:'children, creativity, merit',Gnatikaraka:'obstacles, health, kin',Darakaraka:'spouse, partnership'};
   ck.forEach(k=>{ckRows+=`<tr><td class="glyph">${k.karaka}</td><td>${k.name}</td><td class="num">${J.dms(k.val)}</td><td class="muted">${CKM[k.karaka]}</td></tr>`;});
-  add('karaka',secHead('07','Chara Kārakas (Jaimini soul-significators)')+
+  add('karaka',secHead('karaka','Chara Kārakas (Jaimini soul-significators)')+
     `<div class="tbl-wrap"><table><thead><tr><th>Kāraka</th><th>Graha</th><th>Degree in sign</th><th>Signifies</th></tr></thead><tbody>${ckRows}</tbody></table></div>
     <p class="hint">The <b>Ātmakāraka</b> (${ck[0].name}, highest degree) is the soul-significator - the most important planet in the Jaimini scheme.</p>`);
 
   /* ---------- 08 YOGAS ---------- */
-  add('yoga',secHead('08','Yogas - planetary combinations')+
+  add('yoga',secHead('yoga','Yogas - planetary combinations')+
     (yog.length?`<div class="yoga-list">${yog.map(y=>`<div class="yoga"><span class="icon">✦</span><div><b>${y[0]}</b><p>${y[1]}</p>${whyBlock(y[2])}</div></div>`).join('')}</div>`
     :'<p class="empty">No major classical yogas flagged.</p>'));
 
   /* ---------- 09 PLANETARY STATES ---------- */
   let stRows='';avs.forEach(a=>{const p=P[a.i];stRows+=`<tr><td class="glyph">${PL[a.i]}</td><td>${a.inSign} (${SG[p.sign]})</td><td>${a.compound}</td><td>${a.avastha}</td><td class="num">${a.varga}</td><td>${p.combust?'<span class="pill comb">Combust</span>':p.retro?'<span class="pill retro">Retro</span>':'<span class="muted">-</span>'}</td></tr>`;});
-  add('states',secHead('09','Planetary States - Friendship, Avasthā & Combustion')+
+  add('states',secHead('states','Planetary States - Friendship, Avasthā & Combustion')+
     `<div class="tbl-wrap"><table><thead><tr><th>Planet</th><th>In sign of</th><th>Compound relation</th><th>Baladi avasthā</th><th>Varga bala</th><th>Condition</th></tr></thead><tbody>${stRows}</tbody></table></div>`);
 
   /* ---------- 10 JAIMINI POINTS ---------- */
-  add('jaimini',secHead('10','Jaimini & Special Points')+
+  add('jaimini',secHead('jaimini','Jaimini & Special Points')+
     `<div class="tbl-wrap"><table><thead><tr><th>Point</th><th>Position</th><th>Meaning</th></tr></thead><tbody>
       <tr><td>Arudha Lagna (AL)</td><td>${SG[jm.AL]}</td><td class="muted">How the world perceives ${pro}</td></tr>
       <tr><td>Upapada (UL) - marriage</td><td>${SG[jm.UL]}</td><td class="muted">The image of the spouse & partnership</td></tr>
@@ -717,7 +834,7 @@ function renderReport(chart,input){
   let arRows='';for(let h=1;h<=12;h++){arRows+=`<td class="ar-k">${h===1?'AL':'A'+h}</td><td>${SG[jm.arudhas[h]]}</td>`;if(h%3===0)arRows='<tr>'+arRows+'</tr>';}
   // rebuild arudha rows properly
   let arGrid='';for(let h=1;h<=12;h+=3){arGrid+='<tr>';for(let k=h;k<h+3&&k<=12;k++)arGrid+=`<td class="ar-k">${k===1?'AL':k===12?'UL':'A'+k}</td><td>${SG[jm.arudhas[k]]}</td>`;arGrid+='</tr>';}
-  add('strength',secHead('11','Planetary Strength & Upagrahas')+
+  add('strength',secHead('strength','Planetary Strength & Upagrahas')+
     `<h3 class="sub-h">Indicative strength (Naisargika · Sthāna · Dig, in virūpas)</h3>
     <div class="tbl-wrap"><table><thead><tr><th>Planet</th><th>Naisargika</th><th>Sthāna</th><th>Dig</th><th>Rūpas</th><th>Rank</th></tr></thead><tbody>${sbRows}</tbody></table></div>
     <h3 class="sub-h">Upagrahas (sub-planets) - sensitive points</h3>
@@ -729,7 +846,7 @@ function renderReport(chart,input){
   let sb2='';sbala.forEach(r=>{const strong=r.ratio>=1;
     sb2+=`<tr><td class="glyph">${PL[r.i]}</td><td class="num">${r.sthana.toFixed(1)}</td><td class="num">${r.dig.toFixed(1)}</td><td class="num">${r.kala.toFixed(1)}</td><td class="num">${r.cheshta.toFixed(1)}</td><td class="num">${r.nais.toFixed(1)}</td><td class="num">${r.rupas.toFixed(2)}</td><td class="num">${r.req.toFixed(1)}</td><td class="num" style="color:${strong?'var(--good)':'var(--crit)'};font-weight:600">${r.ratio.toFixed(2)}</td></tr>`;});
   const strong=sbala.filter(r=>r.ratio>=1).map(r=>PL[r.i]);
-  add('shadbala',secHead('12','Shadbala (Six-fold Strength) & Bhavabala')+
+  add('shadbala',secHead('shadbala','Shadbala (Six-fold Strength) & Bhavabala')+
     `<p class="para">Each planet scored on positional, directional, temporal, motional and natural strength (virūpas → rūpas). Ratio &gt; 1.0 means the planet meets its classical requirement.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Planet</th><th>Sthāna</th><th>Dig</th><th>Kāla</th><th>Cheṣṭā</th><th>Naisarga</th><th>Rūpas</th><th>Req.</th><th>Ratio</th></tr></thead><tbody>${sb2}</tbody></table></div>
     <p class="hint">${strong.length?`Meeting the classical requirement: <b>${strong.join(', ')}</b>.`:`<b>No planet</b> meets its classical requirement in this chart.`} Bhavabala (house strength) mirrors the Ashtakavarga: strongest ${SG[av.sav.indexOf(maxS)]} (${maxS}), weakest ${SG[av.sav.indexOf(minS)]} (${minS}).</p>
@@ -738,23 +855,35 @@ function renderReport(chart,input){
   /* ---------- 13 DOSHAS ---------- */
   let dRows='';dsh.forEach(d=>{const cls=d.status.includes('ABSENT')||d.status==='Absent'?'good':d.status.includes('PRESENT')||d.status==='ACTIVE'?'warn':'muted';
     dRows+=`<tr><td>${d.name}</td><td><span class="stat-pill ${cls}">${d.status}</span></td><td class="muted">${d.detail}${whyBlock(d.why)}</td></tr>`;});
-  add('doshas',secHead('13','Doshas (Afflictions) & Graha Yuddha')+
+  add('doshas',secHead('doshas','Doshas (Afflictions) & Graha Yuddha')+
     `<div class="tbl-wrap"><table><thead><tr><th>Dosha</th><th>Status</th><th>Detail & mitigation</th></tr></thead><tbody>${dRows}</tbody></table></div>`);
 
   /* ---------- 14 STRENGTHS PROSE ---------- */
-  add('good',secHead('14',"The Strengths - What the Chart Promises")+
+  add('good',secHead('good',"The Strengths - What the Chart Promises")+
     `<div class="prose">${strengthProse(chart,vim,yog,sbala,av,fn).map(s=>`<div class="read"><div class="tag good-tag">${s[0]}</div><p>${s[1]}</p></div>`).join('')}</div>`);
 
   /* ---------- 15 CHALLENGES PROSE ---------- */
-  add('bad',secHead('15',"The Challenges - Sensitive Areas")+
+  add('bad',secHead('bad',"The Challenges - Sensitive Areas")+
     `<div class="prose">${challengeProse(chart,dsh,ss,P,asc).map(s=>`<div class="read"><div class="tag bad-tag">${s[0]}</div><p>${s[1]}</p></div>`).join('')}</div>`);
 
   /* ---------- 16 LIFE READINGS ---------- */
-  add('life',secHead('16','Life-Area Readings')+
+  add('life',secHead('life','Life-Area Readings')+
     `<div class="interp">${lifeReadings(chart,input,vim,ss,fn,jm,pro,His,first).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p></div>`).join('')}</div>`);
 
+  /* ---------- CAREER & FINANCE ---------- */
+  const rd=r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p>${r[2]?whyBlock(r[2]):''}</div>`;
+  add('career',secHead('career','Career, Business & Finance in Detail')+
+    `<div class="prose">${careerFinanceReadings(chart,vim,fn,sbala,av).map(rd).join('')}</div>
+    <p class="disc-inline">Money sections describe the chart's traditional leanings only. Nothing here is
+      investment, tax or financial advice - jyotiṣa describes inclination, not what anyone should buy, sell or
+      hold, and no chart replaces a qualified adviser.</p>`);
+
+  /* ---------- EDUCATION, FOREIGN TRAVEL & LIFESTYLE ---------- */
+  add('learning',secHead('learning','Education, Foreign Travel & Lifestyle')+
+    `<div class="prose">${learningReadings(chart,vim,jm).map(rd).join('')}</div>`);
+
   /* ---------- 17 PEOPLE & PARENTS ---------- */
-  add('people',secHead('17','The People in Life - Spouse, Children, Parents')+
+  add('people',secHead('people','The People in Life - Spouse, Children, Parents')+
     `<div class="prose">${peopleReadings(chart,ck,jm,P,asc,pro,His).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p></div>`).join('')}</div>
     <p class="hint">Parents' birth details were not supplied - this reads from ${pro==='she'?'her':pro==='he'?'his':'their'} own kārakas and houses. Provide their date/time/place to add full synastry.</p>`);
 
@@ -763,7 +892,7 @@ function renderReport(chart,input){
   vim.list.forEach((md,i)=>{const a0=Math.round((md.st-chart.jd)/YEAR),a1=Math.round((md.en-chart.jd)/YEAR);
     const active=nowJD()>=md.st&&nowJD()<md.en;
     chrono+=`<tr class="${active?'active-row':''}"><td>${PL[md.lord]} - ${jd2date(md.st).getUTCFullYear()}-${jd2date(md.en).getUTCFullYear()} (age ${a0}-${a1})</td><td>${active?'<b>NOW: </b>':''}${dashaTheme(md.lord)}</td></tr>`;});
-  add('chrono',secHead('18','Life Chronology - the Road Ahead')+
+  add('chrono',secHead('chrono','Life Chronology - the Road Ahead')+
     `<p class="para">Reading the Vimśottari daśā against age gives the life's chapters (approximate).</p>
     <div class="tbl-wrap"><table><thead><tr><th>Period (age)</th><th>What the chart indicates</th></tr></thead><tbody>${chrono}</tbody></table></div>`);
 
@@ -771,7 +900,7 @@ function renderReport(chart,input){
   const chalitPlace=chalit.placements.map(p=>({glyph:PG[p.i],house:p.bhava,sign:p.sign,cls:p.i>=7?'':''}))
     .concat([{glyph:'La',house:1,sign:chalit.ascSign,cls:'pl-asc'}]);
   const shifts=chalit.placements.filter(p=>p.bhava!==p.signHouse&&p.i<7).map(p=>`${PL[p.i]} ${p.signHouse}→${p.bhava}`);
-  add('chalit',secHead('19','Bhava Chalit Chart (cusp-based)')+
+  add('chalit',secHead('chalit','Bhava Chalit Chart (cusp-based)')+
     `<div class="chart-row">
       <div class="panel chart-card"><h3>Bhava Chalit · North</h3>${northChart(chalit.ascSign,chalitPlace)}</div>
       <div class="panel col-note"><p>The Rāśi (D-1) places planets by <b>sign</b>; the Bhava Chalit places them by the actual house <b>cusps</b> (Sripati, Midheaven at ${SG[signOf(chalit.mc)]} ${J.dm(chalit.mc%30)}). Planets near a sign's edge can shift one house by cusp.</p>
@@ -779,14 +908,14 @@ function renderReport(chart,input){
     </div>`);
 
   /* ---------- 20 DEPTH ---------- */
-  add('depth',secHead('20','Longevity · Spouse · Children - in depth')+
+  add('depth',secHead('depth','Longevity · Spouse · Children - in depth')+
     `<div class="prose">${depthReadings(chart,ck,jm,P,asc,vim,pro).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p></div>`).join('')}</div>
     <p class="disc-inline">Longevity readings are the least certain in jyotiṣa and are offered for reflection only - never as a manner-of-death claim or medical advice.</p>`);
 
   /* ---------- 21 DIVISIONAL CHARTS ---------- */
   const VARGAS=[[9,'Navāṁśa · D-9 marriage/dharma'],[10,'Daśāṁśa · D-10 career'],[7,'Saptāṁśa · D-7 children'],[60,'Ṣaṣṭyāṁśa · D-60 karma'],[2,'Horā · D-2 wealth'],[3,'Drekkāṇa · D-3 siblings'],[4,'Chaturthāṁśa · D-4 property'],[12,'Dvādaśāṁśa · D-12 parents'],[16,'Ṣoḍaśāṁśa · D-16 vehicles'],[20,'Viṁśāṁśa · D-20 spiritual'],[24,'Siddhāṁśa · D-24 learning'],[27,'Bhāṁśa · D-27 strength'],[30,'Triṁśāṁśa · D-30 troubles'],[40,'Khavedāṁśa · D-40'],[45,'Akṣavedāṁśa · D-45']];
   let vcards='';VARGAS.forEach(([D,label])=>{const v=J.buildVarga(chart,D);vcards+=`<div class="panel varga-card"><h4>${label}</h4>${southChart(v.ascSign,vargaPlacements(v))}</div>`;});
-  add('vargas',secHead('21','Divisional Charts (Vargas)','Parāśari · South Indian')+`<div class="varga-hint">← swipe to browse the divisional charts →</div><div class="varga-grid">${vcards}</div>`);
+  add('vargas',secHead('vargas','Divisional Charts (Vargas)','Parāśari · South Indian')+`<div class="varga-hint">← swipe to browse the divisional charts →</div><div class="varga-grid">${vcards}</div>`);
 
   /* ---------- 22 DASHA ROADMAP ---------- */
   let mdHtml='';vim.list.forEach((md,mi)=>{const active=nowJD()>=md.st&&nowJD()<md.en;let adHtml='';
@@ -794,14 +923,14 @@ function renderReport(chart,input){
     mdHtml+=`<div class="md-row${active?' active':''}" data-md="${mi}"><span class="lord">${PL[md.lord]}</span>${active?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(md.st)} - ${jdFmt(md.en)}</span></div><div class="ad-wrap${active?' show':''}" data-adw="${mi}">${adHtml}</div>`;});
   let yogHtml='';yog2Yogini(chart).forEach(y=>{const active=nowJD()>=y.st&&nowJD()<y.en;
     yogHtml+=`<div class="md-row${active?' active':''}"><span class="lord" style="width:auto">${y.name}</span><span class="muted" style="font-size:12px">(${PL[y.ruler]})</span>${active?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(y.st)} - ${jdFmt(y.en)}</span></div>`;});
-  const s22=add('dasha',secHead('22','Daśā Roadmap & Timing',`Vimśottari balance: ${PL[vim.startLord]} ${vim.balanceYrs.toFixed(2)} yrs`)+
+  const s22=add('dasha',secHead('dasha','Daśā Roadmap & Timing',`Vimśottari balance: ${PL[vim.startLord]} ${vim.balanceYrs.toFixed(2)} yrs`)+
     `<div class="dasha-cols"><div><div class="eyebrow" style="margin-bottom:8px">Vimśottari Mahādaśā · Antardaśā</div><div class="dasha-list" id="vimList">${mdHtml}</div><p class="hint" style="margin-top:8px">Tap a mahādaśā to expand its sub-periods.</p></div><div><div class="eyebrow" style="margin-bottom:8px">Yoginī Daśā (36-year cycle)</div><div class="dasha-list">${yogHtml}</div></div></div>`);
   s22.querySelectorAll('.md-row[data-md]').forEach(row=>row.addEventListener('click',()=>{const w=s22.querySelector(`[data-adw="${row.dataset.md}"]`);if(w)w.classList.toggle('show');}));
 
   /* ---------- 23 SADE-SATI & TRANSITS ---------- */
   const satSign=ss.satSign,jupNow=signOf(J.transitLon(4,nowJD())),rahNow=signOf(J.transitLon(7,nowJD()));
   let winTxt=ss.windows.filter(w=>w[1]>nowJD()-YEAR).slice(0,3).map(w=>`${jd2date(w[0]).getUTCFullYear()}-${jd2date(w[1]).getUTCFullYear()}`).join(', ');
-  add('sadesati',secHead('23','Sade-Sati & Current Transits (Gochara)')+
+  add('sadesati',secHead('sadesati','Sade-Sati & Current Transits (Gochara)')+
     `<ul class="clean">
       <li><b>Sade-Sati status: ${ss.status}.</b> Transiting Saturn is in ${SG[satSign]} - the ${ord(ss.from)} from the natal Moon (${SG[moon.sign]}). ${ss.status==='ACTIVE'?ss.phase+' phase - a testing, maturing period for mind, career and health.':'The main Saturn pressure is not on the Moon right now.'}</li>
       <li>Sade-Sati windows (Saturn over 12th/1st/2nd from Moon): <b>${winTxt||'-'}</b>.</li>
@@ -810,7 +939,7 @@ function renderReport(chart,input){
     </ul>`);
 
   /* ---------- 24 REMEDIES ---------- */
-  add('remedies',secHead('24','Traditional Remedies (Upāya) & Spiritual Guidance')+
+  add('remedies',secHead('remedies','Traditional Remedies (Upāya) & Spiritual Guidance')+
     `<p class="para">Offered per classical custom - supportive practices, not guarantees. Use what resonates; confirm gemstones with a qualified jyotiṣi.</p>
     <ul class="clean">
       <li>Strengthen the Lagna lord ${PL[lagnaLord]}: ${PATTR[lagnaLord].dev} worship on ${PATTR[lagnaLord].day}; colour ${PATTR[lagnaLord].col}.</li>
@@ -829,19 +958,19 @@ function renderReport(chart,input){
   const goc=J.gochara(chart,Math.max(input.y+ (nowJD()>chart.jd?Math.floor((nowJD()-chart.jd)/YEAR):0), input.y), Math.min(input.y+98,2100));
   let gRows='';goc.forEach(r=>{const cls=r.ss?'row-ss':r.note.includes('Kantaka')||r.note.includes('Ashtama')?'row-kant':r.fav?'row-fav':'';
     gRows+=`<tr class="${cls}"><td class="num">${r.year}</td><td class="num">${r.age}</td><td>${r.dasha}</td><td>${SS[r.sat.sign]}(${r.sat.h})</td><td>${SS[r.jup.sign]}(${r.jup.h})</td><td>${SS[r.rahu.sign]}(${r.rahu.h})</td><td>${r.note}</td></tr>`;});
-  add('gochara',secHead('25',`Year-by-Year Transit (Gochara) Forecast`,`to ${goc.length?goc[goc.length-1].year:''}`)+
+  add('gochara',secHead('gochara',`Year-by-Year Transit (Gochara) Forecast`,`to ${goc.length?goc[goc.length-1].year:''}`)+
     `<p class="para">Each year read on the birthday: the slow planets against the natal Moon (${SG[moon.sign]}) and Lagna, with the running daśā. Sign and (house-from-Moon) shown. <span class="row-ss legend-chip">Sade-Sati</span> <span class="row-kant legend-chip">Kantaka/Ashtama</span> <span class="row-fav legend-chip">Jupiter favourable</span></p>
     <div class="tbl-wrap gochara-wrap"><table class="gochara"><thead><tr><th>Yr</th><th>Age</th><th>Daśā</th><th>Saturn</th><th>Jupiter</th><th>Rahu</th><th>Key note</th></tr></thead><tbody>${gRows}</tbody></table></div>`);
 
   /* ---------- 26 NEAR-TERM ---------- */
   const nt=J.nearTerm(chart,5);
   let ntRows='';nt.forEach(e=>{ntRows+=`<tr class="${e.dasha?'row-dasha':e.fav?'row-fav':''}"><td class="num">${jdFmt(e.jd)}</td><td>${e.txt}${e.fav?' <b>[favourable]</b>':''}</td></tr>`;});
-  add('nearterm',secHead('26','Focused Near-Term Forecast (5 years)')+
+  add('nearterm',secHead('nearterm','Focused Near-Term Forecast (5 years)')+
     `<p class="para">Month-level timeline - Saturn/Jupiter/Rahu sign-ingresses interwoven with the Vimśottari sub-periods.</p>
     <div class="tbl-wrap gochara-wrap"><table class="gochara"><thead><tr><th>Date</th><th>Event</th></tr></thead><tbody>${ntRows||'<tr><td colspan="2" class="muted">No ingresses in the window.</td></tr>'}</tbody></table></div>`);
 
   /* ---------- 27 VERIFICATION ---------- */
-  add('verify',secHead('27','Accuracy & Verification')+
+  add('verify',secHead('verify','Accuracy & Verification')+
     `<div class="prose"><div class="read"><div class="tag">Method</div><p>All positions, nakṣatras, divisional signs, Ashtakavarga bindus, daśā dates and transit ingresses are computed on your device from the astronomy-engine ephemeris (Swiss-Ephemeris-grade) with the Lahiri (Chitrapaksha) ayanāṁśa. No internet, no AI.</p></div>
     <div class="read"><div class="tag">Ayanāṁśa check</div><p>The Lahiri ayanāṁśa at birth computes to ${J.ayanamsa(chart.jd).toFixed(4)}° - the model reproduces the Swiss Ephemeris to under 0.001 arc-second across 1900-2100.</p></div>
     <div class="read"><div class="tag">Cross-validation</div><p>This engine was validated arc-minute against pyswisseph on independent reference charts - every planet's sign, degree, nakṣatra, pada and house matched, and the Sarvashtakavarga totalled the classical 337.</p></div>
@@ -849,7 +978,7 @@ function renderReport(chart,input){
 
   /* ---------- 28 GLOSSARY ---------- */
   const GLOSS=[['Lagna','The rising sign/degree; the 1st house and basis of the chart.'],['Rāśi','A zodiac sign; also the Moon-sign (Janma Rāśi).'],['Nakṣatra / Pada','One of 27 lunar mansions and its quarter; the Moon\'s nakṣatra sets the daśā.'],['Bhava','An astrological house (1-12).'],['Graha','A planet (the nine: Sun…Saturn, Rahu, Ketu).'],['Exalted / Debilitated','A planet\'s sign of greatest strength / weakness.'],['Vargottama','Same sign in D-1 and D-9 - a mark of strength.'],['Combust (Asta)','A planet too close to the Sun, losing brightness.'],['Yoga','A planetary combination producing a defined result.'],['Dosha','An affliction (Manglik, Kāla-Sarpa…).'],['Vimśottari Daśā','The 120-year period timeline: Mahā → Antar → Pratyantar.'],['Ashtakavarga','A bindu (point) system scoring sign/house strength; total 337.'],['Shadbala','The six-fold mathematical strength of a planet, in rūpas.'],['Varga','A divisional/harmonic sub-chart for a life area.'],['Bhava Chalit','A chart placing planets by exact house cusps.'],['Ātmakāraka','The Jaimini soul-significator (highest-degree planet).'],['Arudha Lagna','The chart\'s "image" - how the world perceives the person.'],['Upagraha','A sensitive sub-point (e.g. Gulika/Mandi).'],['Sade-Sati','Saturn\'s ~7.5-year transit over the 12th/1st/2nd from the Moon.'],['Ayanāṁśa','The precession correction from tropical to sidereal; Lahiri is the Indian standard.']];
-  add('glossary',secHead('28','Glossary of Terms')+
+  add('glossary',secHead('glossary','Glossary of Terms')+
     `<div class="tbl-wrap"><table><tbody>${GLOSS.map(g=>`<tr><td style="white-space:nowrap"><b>${g[0]}</b></td><td class="muted">${g[1]}</td></tr>`).join('')}</table></div>`);
 
   /* plain-English glosses under each section head (shown when the toggle is on) */
@@ -934,6 +1063,219 @@ function aspectNote(a,P,asc){const houses=a.aspects;
   if(a.i===2)return `Mars energises the ${houses.map(ord).join(', ')} - drive and initiative.`;
   return `Casts its ${houses.map(ord).join(', ')} aspect.`;
 }
+/* ======================= MARRIAGE COMPATIBILITY (Guṇa Milan) =======================
+   Renders J.compatibility(). The order is deliberate and matches classical practice:
+   the score is shown, but the dosha gates come before any of the deeper layers,
+   because a total that has not been checked against the Nadi and Bhakoot exception
+   rules is the commonest way machine-generated matching misleads people. */
+function renderMatchReport(gChart,gInput,bChart,bInput){
+  SECTIONS=MATCH_SECTIONS;
+  const R=$('#report');R.innerHTML='';
+  const m=J.compatibility(gChart,bChart);
+  const jump=$('#jumpInner');jump.innerHTML=SECTIONS.map(s=>`<a href="#sec-${s[0]}" data-sec="${s[0]}">${s[1]}</a>`).join('');
+  const jc=$('#jumpCount');if(jc)jc.textContent='1 / '+SECTIONS.length;
+  requestAnimationFrame(railUpdate);
+  const add=(id,html)=>{const s=el('section','rpt',html);s.id='sec-'+id;R.appendChild(s);return s;};
+
+  const bar=(v,max)=>{const f=max?v/max:0;
+    const col=f>=0.8?'var(--good)':f>=0.5?'var(--brass)':f>0?'var(--warn)':'var(--crit)';
+    return {w:Math.max(f*100,v>0?4:2),col};};
+  const tag=s=>`<span class="strength-tag ${s}">${s}</span>`;
+  const list=(arr,empty)=>arr.length?`<ul class="clean">${arr.map(x=>`<li>${x}</li>`).join('')}</ul>`:`<p class="muted">${empty}</p>`;
+  const born=i=>`${String(i.d).padStart(2,'0')} ${MON[i.mo-1]} ${i.y}, ${String(i.hh).padStart(2,'0')}:${String(i.mi).padStart(2,'0')}`;
+
+  /* the sticky phone bar carries the headline number instead of the lagna/dasha */
+  const mb=$('#mobileBar');
+  if(mb){mb.innerHTML=`<span>Guṇa <b>${m.total}/36</b></span><span>Nāḍī <b>${m.gates[0].present?(m.gates[0].cancelled?'cancelled':'dosha'):'clear'}</b></span><span>Bhakūṭa <b>${m.gates[1].present?(m.gates[1].cancelled?'cancelled':'dosha'):'clear'}</b></span>`;
+    mb.classList.add('show');}
+
+  const who=(inp,mi,role)=>`<div class="who"><b>${esc(inp.name)}</b>
+    <span class="who-role">${role}</span>
+    ${born(inp)} · ${esc(inp.place)}<br>
+    Moon in ${mi.signName} · ${mi.nakName} pada ${mi.pada} · ${mi.lordName}-ruled</div>`;
+  const pair=`<div class="match-pair">${who(gInput,m.g,'Groom')}${who(bInput,m.b,'Bride')}</div>`;
+  const standing=m.gates.filter(g=>g.present&&!g.cancelled);
+
+  /* ---------- 01 MATCH AT A GLANCE ---------- */
+  add('mglance',secHead('mglance','Marriage Compatibility - at a Glance',`${m.total} / 36`)+
+    `<p class="para">Both nativities are cast in full - Rāśi (D-1) and Navāṁśa (D-9) - before any matching
+      begins. The traditional 36-point score is below, but it is read <b>after</b> the two heavy doshas have
+      been checked against their classical exception rules, not before. A total on its own is a guideline,
+      never a pass or a fail.</p>
+    ${pair}
+    <div class="panel match-head">
+      <div class="match-total">${m.total}<small> / 36</small></div>
+      <div class="match-verdict"><b>${esc(m.verdict)}</b><br>
+        Traditionally 18 and above is read as workable and 28 and above as strong. ${standing.length
+          ?`<b>${standing.map(g=>g.name).join(' and ')}</b> ${standing.length>1?'are':'is'} standing uncancelled - which matters more than this number, and is set out in full two sections below.`
+          :'Neither Nāḍī nor Bhakūṭa dosha is standing uncancelled.'}</div>
+    </div>
+    <div class="sc-cols" style="margin-top:16px">
+      <div class="panel sc-card good"><div class="sc-head">Specific strengths</div>
+        ${list(m.strengths.slice(0,8),'No koota or layer reaches the strong band.')}</div>
+      <div class="panel sc-card bad"><div class="sc-head">Specific friction points</div>
+        ${list(m.frictions.slice(0,8),'No koota or layer falls into the weak band.')}</div>
+    </div>
+    <p class="disc-inline">Guṇa Milan is a traditional interpretive system. The astronomy behind both charts is
+      exact and the tables are the classical ones, but compatibility between two people is not decided by a
+      36-point score - this report is offered for reflection, not as a verdict on a marriage.</p>`);
+
+  /* ---------- 02 ASHTAKOOTA ---------- */
+  const kootas=m.kootas.map(k=>{const b=bar(k.pts,k.max);
+    return `<div class="koota">
+      <div class="kn">${k.sans}<small>max ${k.max}</small></div>
+      <div class="ktrack"><div class="kfill" style="width:${b.w}%;background:${b.col}"></div></div>
+      <div class="kpts">${k.pts} / ${k.max}</div>
+      <div class="kbody">${k.detail} ${k.plain}${whyBlock(k.why)}</div>
+    </div>`;}).join('');
+  add('mkoota',secHead('mkoota','Ashtakoota - the 36-Point Guṇa Milan',`${m.total} / 36`)+
+    `<p class="para">Eight kootas, each comparing one quality of the two Moons. They are not weighted equally -
+      Nāḍī alone carries eight points and Bhakūṭa seven, so nearly half the total rides on two tests. The bars
+      below are drawn to each koota's own maximum, and every one opens to show the classical rule and the values
+      from these two charts that satisfied it.</p>
+    <div class="panel bar-wrap">
+      <div class="bar-title">Guṇa Milan - the eight kootas, by weight</div>
+      ${kootas}
+    </div>
+    <p class="hint">Points are awarded by the classical tables (Bṛhat Parāśara Horā Śāstra and the melāpaka
+      tradition). Where a table differs between schools, the widely-published symmetric form is used and is
+      named in the rule shown under each koota.</p>`);
+
+  /* ---------- 03 DOSHA GATES ---------- */
+  const gates=m.gates.map(g=>{
+    const cls=!g.present?'clear':g.cancelled?'cancelled':'standing';
+    return `<div class="gate ${cls}"><div class="gh">${g.name}</div>
+      <div class="gv">${esc(g.verdict)}</div><p>${g.guidance}</p>
+      ${g.exceptions.length?`<p style="margin-top:7px"><b>Cancellation conditions met:</b> ${g.exceptions.join('; ')}.</p>`:''}
+      ${whyBlock(g.why)}</div>`;}).join('');
+  add('mgates',secHead('mgates','The Dosha Gates - Nāḍī & Bhakūṭa',standing.length?`${standing.length} standing`:'clear')+
+    `<p class="para">These two carry fifteen of the thirty-six points between them, and both have explicit
+      cancellation rules in the classical texts. Quoting a score without running those rules is the commonest
+      way automated matching misleads people, so they are run here and shown either way - including when the
+      dosha is absent, so you can see the check was made.</p>
+    ${gates}
+    ${standing.length?`<p class="disc-inline">A standing dosha is a reason to consult an experienced astrologer
+      with both charts in hand. It is not a verdict, and it is not something software should decide.</p>`
+      :`<p class="disc-inline">Both gates are clear or cancelled, so the koota total above can be read at face
+      value - alongside the chart-level layers that follow, which the kootas do not cover at all.</p>`}`);
+
+  /* ---------- 04 BEYOND THE KOOTAS ---------- */
+  const layers=m.layers.map(l=>`<div class="read"><div class="tag">${l.name} ${tag(l.strength)}</div>
+    <p>${l.detail}</p><p style="margin-top:7px">${l.plain}</p>
+    <p class="muted" style="margin-top:7px;font-size:12.5px"><b>Daśā window:</b> ${l.dasha}</p>
+    ${whyBlock(l.why)}</div>`).join('');
+  add('mlayers',secHead('mlayers','Beyond the Kootas - Chart-Level Layers')+
+    `<p class="para">Ashtakoota compares two Moons and nothing else - it never looks at either Lagna, at the 7th
+      house, or at the Navāṁśa. These five layers read the whole of both charts against each other, and
+      classical practice weighs them at least as heavily as the score. The Navāṁśa layer in particular outranks
+      the koota total on any marital question, because D-9 is the varga that governs marriage.</p>
+    <div class="prose">${layers}</div>`);
+
+  /* ---------- 05 AREA BY AREA ---------- */
+  const areas=m.areas.map(a=>{const b=bar(a.score,100);
+    return `<div class="area"><div class="ah"><b>${a.name}</b><span class="as" style="color:${b.col}">${a.score}%</span></div>
+      <div class="atrack"><div class="afill" style="width:${b.w}%;background:${b.col}"></div></div>
+      <p>${a.plain}</p><div class="af">${esc(a.factors)}</div>
+      <p class="muted" style="margin-top:7px;font-size:12px"><b>Daśā:</b> ${a.dasha}</p>
+      ${whyBlock(a.why)}</div>`;}).join('');
+  const weakest=m.areas.slice().sort((x,y)=>x.score-y.score)[0];
+  const best=m.areas.slice().sort((x,y)=>y.score-x.score)[0];
+  add('mareas',secHead('mareas','Compatibility Area by Area')+
+    `<p class="para">One number for a whole marriage is not much use. Each area below is scored from the kootas
+      and the chart factors that classically govern it, and carries the same rule → chart → strength → daśā →
+      plain-language trail as every other reading here. On this pairing the strongest area is
+      <b>${best.name.toLowerCase()}</b> (${best.score}%) and the weakest <b>${weakest.name.toLowerCase()}</b>
+      (${weakest.score}%).</p>
+    <div class="area-grid">${areas}</div>`);
+
+  /* ---------- 06 BOTH CHARTS, D-1 AND D-9 ---------- */
+  const chartPair=(chart,inp,role)=>{
+    const d9=J.buildVarga(chart,9);
+    const P=chart.planets;
+    const rows=P.map(p=>`<tr><td class="glyph">${PSA[p.i]} <span class="muted">${p.name}</span></td>
+      <td>${SA[p.sign]}</td><td class="num">${J.dms(p.lon%30)}</td><td class="num">${p.house}</td>
+      <td>${p.nak.name}-${p.nak.pada}</td>
+      <td>${p.dig?`<span class="pill ${p.dig.cls}">${p.dig.label}</span>`:'<span class="muted">-</span>'}</td></tr>`).join('');
+    return `<h3 class="sub-h">${esc(inp.name)} <span class="muted">· ${role} · ${born(inp)} · ${esc(inp.place)}</span></h3>
+      <div class="chart-row">
+        <div class="panel chart-card"><h3>Rāśi · D-1</h3>${northChart(chart.ascSign,d1Placements(chart))}</div>
+        <div class="panel chart-card"><h3>Navāṁśa · D-9 <span class="muted">(the marriage varga)</span></h3>${southChart(d9.ascSign,vargaPlacements(d9))}</div>
+      </div>
+      <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Graha</th><th>Rāśi</th><th>Degree</th><th>H</th><th>Nakṣatra-pada</th><th>Dignity</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  };
+  add('mcharts',secHead('mcharts','Both Charts - Rāśi (D-1) & Navāṁśa (D-9)')+
+    `<p class="para">Matching is done on computed charts, not on a nakṣatra lookup, so both are shown in full.
+      The Navāṁśa is included beside each Rāśi because the tradition treats D-9 as the chart that actually
+      governs marriage - a promise strong in D-1 but broken in D-9 is read as a promise that does not hold.
+      Positions are sidereal, Lahiri ayanāṁśa, whole-sign houses.</p>
+    ${chartPair(gChart,gInput,'Groom')}
+    ${chartPair(bChart,bInput,'Bride')}`);
+
+  /* ---------- 07 DASHA & TIMING ---------- */
+  const dashaCol=(chart,inp,role,ds)=>{
+    const vim=J.vimshottari(chart.planets[1].lon,chart.jd);
+    const cur=vim.list.find(x=>nowJD()>=x.st&&nowJD()<x.en);
+    const ad=cur&&cur.ad.find(a=>nowJD()>=a.st&&nowJD()<a.en);
+    const upcoming=vim.list.filter(x=>x.st>nowJD()).slice(0,3);
+    return `<div class="panel sc-card"><div class="sc-head">${esc(inp.name)} <span class="muted">· ${role}</span></div>
+      <p class="para" style="margin:8px 0 10px">Running: <b>${cur?PL[cur.lord]:'-'}</b> mahādaśā
+        ${cur?`(${jdMY(cur.st)} - ${jdMY(cur.en)})`:''}${ad?`, <b>${PL[ad.lord]}</b> antardaśā (${jdMY(ad.st)} - ${jdMY(ad.en)})`:''}.
+        Tone: ${ds.curTesting?'a testing period':'a supportive period'} for domestic stability.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Next mahādaśās</th><th>From</th><th>To</th></tr></thead><tbody>
+        ${upcoming.map(x=>`<tr><td>${PL[x.lord]}</td><td>${jdMY(x.st)}</td><td>${jdMY(x.en)}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+  };
+  const dashaLayer=m.layers.find(l=>l.name==='Daśā compatibility');
+  add('mdasha',secHead('mdasha','Daśā & Timing - When, Not Whether')+
+    `<p class="para">Classical practice separates two questions: whether to marry, and when. The kootas and
+      doshas above speak to the first; the running and upcoming Vimśottari periods of both charts speak to the
+      second. Mars, Saturn, Rāhu and Ketu periods bring their own pressure, and a marriage that begins inside
+      one is often blamed for difficulties that belong to the daśā rather than to the pairing.</p>
+    <div class="sc-cols">${dashaCol(gChart,gInput,'Groom',m.dsG)}${dashaCol(bChart,bInput,'Bride',m.dsB)}</div>
+    <div class="read" style="margin-top:16px"><div class="tag">Combined reading ${tag(dashaLayer.strength)}</div>
+      <p>${dashaLayer.plain}</p>${whyBlock(dashaLayer.why)}</div>
+    <p class="hint">Choosing the marriage muhūrta itself needs a human astrologer working from both charts and
+      the transits of the intended month - it is not something computed here.</p>`);
+
+  /* ---------- 08 REMEDIES & NEXT STEPS ---------- */
+  add('mremedy',secHead('mremedy','Remedies & What to Take to an Astrologer')+
+    `<h3 class="sub-h">Traditional remedies</h3>
+    <p class="para">Offered as traditional and cultural practice, in the form the texts and family custom give
+      them. They are not medical, legal or financial advice, and none of them is a guarantee.</p>
+    <ul class="clean">${m.remedies.map(r=>`<li>${r}</li>`).join('')}</ul>
+    ${m.escalate.length?`<div class="escalate"><div class="eh">Take these to a human astrologer before deciding</div>
+      <p class="muted" style="margin:0 0 9px;font-size:13px">Ranked by how much classical weight they carry.
+        This report is a calculation, not an authority - a marriage decision should not rest on it alone, and
+        the items below are the ones an experienced astrologer or elder will want to look at with both charts
+        in hand.</p>
+      <ol>${m.escalate.map(e=>`<li>${e}</li>`).join('')}</ol></div>`
+      :`<div class="escalate"><div class="eh">Nothing flagged for escalation</div>
+      <p class="muted" style="margin:0;font-size:13px">No uncancelled dosha, unmatched Manglik or weak Navāṁśa
+        indication came up. That is a clean read on the classical checks - it is still worth discussing a
+        marriage decision with people who know both families, and a muhūrta is chosen by a human astrologer.</p></div>`}
+    <div class="panel col-note" style="margin-top:18px"><p><b>Want the full horoscope of either person?</b>
+      Switch to <b>Horoscope</b> mode at the top of the form and cast their chart on its own - that report runs
+      to ${BASE_SECTIONS.length} sections, including their own yogas, doshas, daśā roadmap, career, health and
+      remedies.</p></div>
+    <p class="disc-inline">Nothing in this report is generated by a language model. Every line is the output of
+      a fixed classical test applied to the two computed charts, so the same two births always produce the same
+      text - and each verdict opens to show the rule it came from.</p>`);
+
+  /* plain-English glosses under each section head (shown when the toggle is on) */
+  $$('#report section.rpt').forEach(s=>{const g=LAYMAN[s.id.replace('sec-','')];
+    if(g){const sh=s.querySelector('.sec-head');if(sh)sh.insertAdjacentHTML('afterend',`<div class="layman-note">${g}</div>`);}});
+
+  /* footer - same actions as the single-chart report, but the share link carries BOTH charts */
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes <b>both</b> sets of birth details in the URL (not encrypted) - think before sending it on, since it carries someone else's particulars as well as your own.</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Guṇa Milan is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  R.appendChild(foot);
+  $('#pdfBtn').addEventListener('click',()=>window.print());
+  $('#shareBtn').addEventListener('click',()=>{const url=shareMatchUrl(gInput,bInput);const b=$('#shareBtn');
+    const ok=()=>{const l=b.querySelector('.lbl');if(!l)return;const t=l.textContent;
+      l.textContent='Link copied';setTimeout(()=>{l.textContent=t;},1600);};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(ok,()=>prompt('Copy this link:',url));
+    else prompt('Copy this link:',url);});
+  $('#editBtn').addEventListener('click',()=>smoothTo($('#formCard')));
+}
 function strengthProse(chart,vim,yog,sbala,av,fn){
   const P=chart.planets,out=[];
   const ex=P.filter(p=>p.dig&&p.dig.cls==='exalt');
@@ -972,6 +1314,155 @@ function lifeReadings(chart,input,vim,ss,fn,jm,pro,His,first){
   out.push(['Spirituality & inner life',`${P[8].house===1?'Ketu on the Lagna, ':''}${SA[asc]} rising and the Yogi linked to ${jm.yogiLord} draw ${pro} toward depth, philosophy and inner practice, especially in the ${jm.yogiLord} and later periods. Iṣṭa Devatā: ${J.ISHTA_DEV[SL[jm.ishta12]]}.`]);
   return out;
 }
+/* ======================= CAREER / FINANCE / EDUCATION READINGS =======================
+   House-and-lord readings for the areas the life-area section only touches in one
+   line each. Same contract as the rest of the report: every verdict is the output
+   of a printed classical test, and carries its rule, the chart values that fired
+   it, and its tradition. */
+const PAR_C="Bhāva significations - Bṛhat Parāśara Horā Śāstra / Phaladīpikā";
+/* the date range of a graha's Vimśottari mahādaśā, for the "when does this activate" line */
+function mdSpan(vim,lord){
+  const m=vim.list.find(x=>x.lord===lord);
+  return m?`${PL[lord]} mahādaśā (${jdMY(m.st)} - ${jdMY(m.en)})`:`${PL[lord]} periods`;
+}
+const DUS=[6,8,12];                        // the dusthānas
+const DUAL_SIGNS=[2,5,8,11];               // dvisvabhāva: Gemini, Virgo, Sagittarius, Pisces
+function careerFinanceReadings(chart,vim,fn,sbala,av){
+  const P=chart.planets, asc=chart.ascSign, out=[];
+  const L=h=>SL[(asc+h-1)%12];                 // lord of the h-th bhava
+  const H=pi=>P[pi].house;                     // bhava a graha occupies
+  const occ=h=>P.filter(p=>p.house===h&&p.i<7).map(p=>p.i);
+  const strong=pi=>P[pi].dig&&(P[pi].dig.cls==='own'||P[pi].dig.cls==='exalt');
+  const weak=pi=>(P[pi].dig&&P[pi].dig.cls==='debil')||P[pi].combust;
+  const l2=L(2),l4=L(4),l5=L(5),l6=L(6),l7=L(7),l8=L(8),l10=L(10),l11=L(11),l12=L(12);
+  const sbRank=pi=>sbala.findIndex(s=>s.i===pi)+1;
+
+  /* --- business vs employment: the 7th/3rd (enterprise) against the 6th/10th (service) --- */
+  const bizScore=(occ(7).length?2:0)+(strong(l7)?2:0)+([1,7,10,11].includes(H(3))?1:0)
+    +(occ(3).filter(x=>[2,3].includes(x)).length?1:0)+([3,7,10,11].includes(H(l11))?1:0);
+  const svcScore=(occ(6).length?2:0)+(strong(l6)?1:0)+([6,10].includes(H(6))?1:0)
+    +(occ(10).filter(x=>[0,6].includes(x)).length?2:0)+(strong(l10)?1:0);
+  const lean=bizScore>svcScore+1?'business or self-employment':svcScore>bizScore+1?'employment and salaried service':'either, with no strong pull to one';
+  out.push(['Business & startup potential vs salaried service',
+    `The 7th (${SG[(asc+6)%12]}, business and dealings) is ruled by ${PL[l7]} in the ${ord(H(l7))}${occ(7).length?`, with ${occ(7).map(x=>PL[x]).join(' & ')} in the 7th`:''}; the 6th (service and employment) is ruled by ${PL[l6]} in the ${ord(H(l6))}${occ(6).length?`, with ${occ(6).map(x=>PL[x]).join(' & ')} in the 6th`:''}; the 3rd (enterprise, initiative) lord ${PL[L(3)]} sits in the ${ord(H(L(3)))}. Weighing those, the chart leans toward <b>${lean}</b>. A venture of one's own asks a working 7th and 3rd; a salaried career asks a working 6th and 10th, and many charts carry both and change track mid-life at a daśā boundary.`,
+    {rule:"The 7th and 3rd bhāvas and their lords govern independent business and enterprise; the 6th and 10th govern service and employment. Occupancy by a graha, and its lord's dignity and placement, decide which side is better supported",
+     chart:`7th lord ${PL[l7]} in the ${ord(H(l7))}${strong(l7)?' (strong)':''}, 7th occupied by ${occ(7).map(x=>PL[x]).join(' & ')||'none'}; 6th lord ${PL[l6]} in the ${ord(H(l6))}, 6th occupied by ${occ(6).map(x=>PL[x]).join(' & ')||'none'}; 3rd lord ${PL[L(3)]} in the ${ord(H(L(3)))} - business indications ${bizScore}, service indications ${svcScore}`,
+     tradition:PAR_C}]);
+
+  /* --- government vs private sector: the Sun and the 10th --- */
+  const sunGov=(H(0)===10||H(0)===1||H(0)===11)+(strong(0)?1:0)+(l10===0?2:0)+(P[0].sign===P[l10].sign?1:0);
+  const govLean=sunGov>=3?'government, public-sector or authority-linked work is well supported':sunGov>=1?'both sectors are open, with a mild tilt toward institutional or public-facing work':'private-sector, commercial or independent work is the better-supported side';
+  out.push(['Government vs private sector',
+    `The Sun - the graha of the state, office and delegated authority - sits in the ${ord(H(0))} in ${SG[P[0].sign]}${P[0].dig?` (${P[0].dig.label})`:''}, and the 10th lord is ${PL[l10]} in the ${ord(H(l10))}. On the classical significations, <b>${govLean}</b>. Saturn in the 10th or ruling it points to large structured organisations either way; Mercury and Venus lean commercial; Jupiter leans advisory, legal and academic institutions.`,
+    {rule:"The Sun signifies government, office and authority; a Sun strong or placed in the 1st, 10th or 11th, or ruling or joining the 10th lord, supports state and public-sector work. Saturn indicates large institutions, Mercury and Venus commerce",
+     chart:`Sun in ${SG[P[0].sign]}${P[0].dig?` (${P[0].dig.label})`:''}, house ${H(0)}; 10th lord ${PL[l10]} in the ${ord(H(l10))}${l10===0?' (the Sun itself rules the 10th)':''} - government indications ${sunGov} of 5`,
+     tradition:PAR_C}]);
+
+  /* --- leadership --- */
+  const mpy=[2,4,5,3,6].filter(pi=>[1,4,7,10].includes(H(pi))&&strong(pi));
+  const kendraCount=P.filter(p=>p.i<7&&[1,4,7,10].includes(p.house)).length;
+  const leadScore=(strong(0)?2:0)+(strong(2)?1:0)+(strong(l10)?2:0)+mpy.length*2+(kendraCount>=3?1:0)+(sbRank(0)<=2?1:0);
+  out.push(['Leadership indicators',
+    `${leadScore>=5?'Strong.':leadScore>=3?'Moderate.':'Present but understated.'} The Sun (authority) is ${strong(0)?'strong in '+SG[P[0].sign]:weak(0)?'under pressure in '+SG[P[0].sign]:'placed in '+SG[P[0].sign]} and ranks ${ord(sbRank(0))} of seven by Shadbala; Mars (command, initiative) sits in the ${ord(H(2))}; the 10th lord ${PL[l10]} is ${strong(l10)?'strong':weak(l10)?'weak':'moderately placed'}; ${kendraCount} of the seven tārā grahas hold quadrants${mpy.length?`, and ${mpy.map(x=>PL[x]).join(' & ')} form${mpy.length>1?'':'s'} a Pañca-Mahāpuruṣa combination`:''}. ${leadScore>=5?'The classical reading is natural command - authority arrives rather than being chased.':leadScore>=3?'Authority is earned through demonstrated competence rather than conferred early.':'Influence works better through expertise and quiet leverage than through formal rank.'}`,
+    {rule:"Leadership is read from the Sun (authority) and Mars (command), the dignity of the 10th lord, grahas holding kendras, and any Pañca-Mahāpuruṣa yoga",
+     chart:`Sun ${P[0].dig?P[0].dig.label:'neutral'} (Shadbala rank ${sbRank(0)}/7), Mars in the ${ord(H(2))}, 10th lord ${PL[l10]} ${P[l10].dig?P[l10].dig.label:'neutral'}, ${kendraCount} grahas in kendras, Mahāpuruṣa: ${mpy.map(x=>PL[x]).join(' & ')||'none'} - score ${leadScore}`,
+     tradition:"Rāja/authority significations - Bṛhat Parāśara Horā Śāstra / Phaladīpikā"}]);
+
+  /* --- income patterns --- */
+  const multi=DUAL_SIGNS.includes(P[l11].sign)||occ(11).length>=2;
+  out.push(['Income patterns',
+    `The 11th (${SG[(asc+10)%12]}, gains) is ruled by ${PL[l11]} in the ${ord(H(l11))}${occ(11).length?`, with ${occ(11).map(x=>PL[x]).join(' & ')} in the 11th`:''}, and the 2nd (${SG[(asc+1)%12]}, earned wealth) by ${PL[l2]} in the ${ord(H(l2))}. Gains flow mainly through ${HOUSE_THEME[H(l11)-1]}. ${multi?'The 11th lord sits in a dual sign or the 11th carries more than one graha - the classical marker of <b>several income streams</b> rather than one, which usually shows up as side work, consulting or mixed sources alongside the main one.':'The indications point to <b>one principal income stream</b> deepening over time rather than several running at once.'} ${weak(l11)?'The 11th lord is afflicted, so income tends to arrive unevenly - budgeting to the trough rather than the peak is the practical reading.':'The 11th lord is not afflicted, which favours steady rather than erratic inflow.'} Ashtakavarga gives the 11th house ${av.sav[(asc+10)%12]} bindus${av.sav[(asc+10)%12]>=28?' - above the 28 mark, a supportive sign for gains':' - below the 28 mark, so gains reward effort rather than arriving easily'}.`,
+    {rule:"The 11th bhāva and its lord govern gains and income, the 2nd accumulated earnings. An 11th lord in a dual sign, or multiple grahas in the 11th, indicates plural income sources; affliction of the 11th lord indicates irregular inflow",
+     chart:`11th lord ${PL[l11]} in ${SG[P[l11].sign]} (${ord(H(l11))})${weak(l11)?', afflicted':''}; 11th occupied by ${occ(11).map(x=>PL[x]).join(' & ')||'none'}; 2nd lord ${PL[l2]} in the ${ord(H(l2))}; SAV of the 11th ${av.sav[(asc+10)%12]}`,
+     tradition:PAR_C}]);
+
+  /* --- savings vs outflow: the 2nd against the 12th --- */
+  const saveScore=(strong(l2)?2:0)+(!DUS.includes(H(l2))?1:0)+(H(6)===2||l2===6?1:0)+(!DUS.includes(H(l11))?1:0);
+  const spendPull=(occ(12).length?1:0)+(strong(l12)?1:0)+([1,2,11].includes(H(l12))?1:0);
+  out.push(['Savings tendency & outflow',
+    `The 2nd lord ${PL[l2]} (accumulation) sits in the ${ord(H(l2))}${P[l2].dig?` (${P[l2].dig.label})`:''}; the 12th lord ${PL[l12]} (expenditure) in the ${ord(H(l12))}${occ(12).length?`, with ${occ(12).map(x=>PL[x]).join(' & ')} in the 12th`:''}. ${saveScore>spendPull+1?'Accumulation outweighs outflow - the chart holds what it earns, and saving comes naturally enough that it does not need enforcing.':spendPull>saveScore+1?'Outflow outweighs accumulation. Not a poverty reading - money moves through rather than sticking, and the traditional counsel is an automatic, structural set-aside rather than relying on intention.':'Accumulation and outflow are roughly balanced: what gets saved is what gets deliberately set aside.'} ${(l2===6||H(6)===2)?'Saturn touching the wealth house is the classical signature of thrift and patient, slow accumulation.':''}`,
+    {rule:"The 2nd bhāva and its lord govern accumulated wealth and the 12th expenditure and loss. Their relative strength, dignity and occupancy give the saving-versus-spending balance; Saturn linked to the 2nd indicates thrift",
+     chart:`2nd lord ${PL[l2]} in the ${ord(H(l2))}${P[l2].dig?` (${P[l2].dig.label})`:''}; 12th lord ${PL[l12]} in the ${ord(H(l12))}; 12th occupied by ${occ(12).map(x=>PL[x]).join(' & ')||'none'} - accumulation ${saveScore}, outflow ${spendPull}`,
+     tradition:PAR_C}]);
+
+  /* --- property & real estate: the 4th, Mars, and D-4 --- */
+  const d4=J.buildVarga(chart,4);
+  const propScore=(strong(l4)?2:0)+(!DUS.includes(H(l4))?1:0)+(occ(4).filter(x=>[2,5,4].includes(x)).length?1:0)+([1,4,7,10,11].includes(H(2))?1:0);
+  out.push(['Property, land & real estate',
+    `The 4th (${SG[(asc+3)%12]}, home and land) is ruled by ${PL[l4]} in the ${ord(H(l4))}${P[l4].dig?` (${P[l4].dig.label})`:''}${occ(4).length?`, with ${occ(4).map(x=>PL[x]).join(' & ')} in the 4th`:''}; Mars, the graha of land and immovable property, sits in the ${ord(H(2))}. The Chaturthāṁśa (D-4), the varga dedicated to property, rises in ${SG[d4.ascSign]}. ${propScore>=3?'The indications for owning property are good, and the 4th-lord and Mars periods are when it typically comes together.':propScore>=2?'Property is indicated, usually later than expected and often with support from family or a partner.':'The property houses carry pressure. Traditionally read as ownership arriving late, or through inheritance and joint holding rather than outright purchase.'} Activating window: ${mdSpan(vim,l4)}${l4!==2?` and ${mdSpan(vim,2)}`:''}.`,
+    {rule:"The 4th bhāva and its lord govern home and immovable property, Mars is the kāraka of land, and the Chaturthāṁśa (D-4) is the varga dedicated to it. Results time to the periods of the 4th lord and Mars",
+     chart:`4th lord ${PL[l4]} in the ${ord(H(l4))}${P[l4].dig?` (${P[l4].dig.label})`:''}; Mars in the ${ord(H(2))}; 4th occupied by ${occ(4).map(x=>PL[x]).join(' & ')||'none'}; D-4 Lagna ${SG[d4.ascSign]} - score ${propScore} of 5`,
+     tradition:"4th bhāva and Chaturthāṁśa - Bṛhat Parāśara Horā Śāstra"}]);
+
+  /* --- inheritance: the 8th (others' wealth, legacies) --- */
+  const inh=(occ(8).filter(x=>[4,5].includes(x)).length?2:0)+(strong(l8)?1:0)+(!DUS.includes(H(l8))?1:0)+(H(l2)===8||H(l8)===2?1:0);
+  out.push(['Inheritance & wealth from others',
+    `The 8th (${SG[(asc+7)%12]}) governs legacies, dowry, insurance and wealth that arrives through others rather than through one's own earning. Its lord ${PL[l8]} sits in the ${ord(H(l8))}${occ(8).length?`, with ${occ(8).map(x=>PL[x]).join(' & ')} in the 8th`:''}. ${inh>=3?'Benefics in or ruling the 8th, or an 8th/2nd link, are the classical marks of inheritance or a substantial gain through family, marriage or settlement.':inh>=2?'Some support for inheritance, typically modest or shared rather than transforming.':'Little classical support for significant inheritance - the chart reads as self-made on the wealth side.'} ${H(l2)===8||H(l8)===2?'The 2nd and 8th lords exchange houses, which classically ties one\'s own wealth to another\'s - marriage, partnership or family estate.':''} Timing follows ${mdSpan(vim,l8)}.`,
+    {rule:"The 8th bhāva and its lord govern inheritance, legacies and wealth received through others; benefics (Jupiter, Venus) in or ruling the 8th, or an exchange between the 2nd and 8th lords, support it",
+     chart:`8th lord ${PL[l8]} in the ${ord(H(l8))}${P[l8].dig?` (${P[l8].dig.label})`:''}; 8th occupied by ${occ(8).map(x=>PL[x]).join(' & ')||'none'}; 2nd lord in the ${ord(H(l2))} - score ${inh} of 5`,
+     tradition:PAR_C}]);
+
+  /* --- investment inclination: educational framing only, never prescriptive --- */
+  const spec=(occ(5).length?1:0)+([5,8,11].includes(H(l5))?1:0)+(P[7].house===11||P[7].house===5?1:0);
+  out.push(['Investment inclination <span class="muted">(educational only)</span>',
+    `This describes the temperament the chart indicates around risk - not what to do with money. The 5th (${SG[(asc+4)%12]}, speculation and intelligence) is ruled by ${PL[l5]} in the ${ord(H(l5))}${occ(5).length?`, with ${occ(5).map(x=>PL[x]).join(' & ')} in the 5th`:''}; the 8th governs others' money and leveraged holdings; the 11th, ${PL[l11]} in the ${ord(H(l11))}, governs realised gains. ${spec>=2?'The chart indicates an inclination <i>toward</i> risk and speculative interest - which classically cuts both ways, since the same signature that finds opportunity also finds volatility.':'The chart indicates an inclination <i>away from</i> speculation and toward slower, more tangible holdings.'} ${DUS.includes(H(l5))?'The 5th lord sits in a difficult house, which the texts read as speculative losses being the more likely outcome of an untested punt.':''} Jyotiṣa describes leaning and karmic tendency, never instruction: no chart can tell anyone what to buy, sell or hold, and a qualified financial adviser is the right authority for that question.`,
+    {rule:"The 5th bhāva governs speculation and the 8th leveraged or others' money; grahas there, and the 5th lord's placement, indicate temperament toward risk. Rāhu in the 5th or 11th intensifies speculative appetite",
+     chart:`5th lord ${PL[l5]} in the ${ord(H(l5))}; 5th occupied by ${occ(5).map(x=>PL[x]).join(' & ')||'none'}; Rāhu in the ${ord(P[7].house)}; 11th lord ${PL[l11]} in the ${ord(H(l11))} - risk indications ${spec} of 3`,
+     tradition:PAR_C}]);
+
+  return out;
+}
+
+function learningReadings(chart,vim,jm){
+  const P=chart.planets, asc=chart.ascSign, out=[];
+  const L=h=>SL[(asc+h-1)%12], H=pi=>P[pi].house;
+  const occ=h=>P.filter(p=>p.house===h&&p.i<7).map(p=>p.i);
+  const strong=pi=>P[pi].dig&&(P[pi].dig.cls==='own'||P[pi].dig.cls==='exalt');
+  const weak=pi=>(P[pi].dig&&P[pi].dig.cls==='debil')||P[pi].combust;
+  const l4=L(4),l5=L(5),l9=L(9),l12=L(12),l3=L(3);
+
+  /* --- education: 4th (schooling), 5th (intelligence), 9th (higher learning), D-24 --- */
+  const d24=J.buildVarga(chart,24);
+  const eduScore=(strong(3)?1:0)+(!weak(3)?1:0)+(strong(4)?1:0)+(!weak(4)?1:0)
+    +(!DUS.includes(H(l4))?1:0)+(!DUS.includes(H(l5))?1:0)+(!DUS.includes(H(l9))?1:0);
+  const higher=!DUS.includes(H(l9))&&!weak(4);
+  out.push(['Education & the pattern of study',
+    `Schooling is read from the 4th (${SG[(asc+3)%12]}, lord ${PL[l4]} in the ${ord(H(l4))}), raw intelligence from the 5th (lord ${PL[l5]} in the ${ord(H(l5))}), and higher or specialised learning from the 9th (lord ${PL[l9]} in the ${ord(H(l9))}). Mercury, the graha of learning and examination, is in ${SG[P[3].sign]}${P[3].dig?` (${P[3].dig.label})`:''}${P[3].combust?' and combust':''}; Jupiter, the graha of wisdom and formal knowledge, in the ${ord(H(4))}${P[4].dig?` (${P[4].dig.label})`:''}. The Siddhāṁśa (D-24), the varga dedicated to education, rises in ${SG[d24.ascSign]}${occ(4).length?`; the 4th carries ${occ(4).map(x=>PL[x]).join(' & ')}`:''}. ${eduScore>=5?'A well-supported education - study comes readily and formal qualification suits the chart.':eduScore>=3?'A sound education with at least one interruption or change of track; the classical reading is that what is learned late is held better than what came easily.':'The learning houses carry pressure. Read as an education pursued against friction - often interrupted, resumed, or gained outside the conventional route, which the texts do not treat as a lesser path.'} ${higher?`Higher study is supported; ${mdSpan(vim,l9)} is the classical window for it.`:'Higher study asks for deliberate effort rather than arriving on momentum.'}`,
+    {rule:"The 4th bhāva governs schooling, the 5th intelligence and the 9th higher learning; Mercury is the kāraka of learning and Jupiter of formal knowledge. The Siddhāṁśa (D-24) is the varga dedicated to education",
+     chart:`4th lord ${PL[l4]} in the ${ord(H(l4))}, 5th lord ${PL[l5]} in the ${ord(H(l5))}, 9th lord ${PL[l9]} in the ${ord(H(l9))}; Mercury in ${SG[P[3].sign]}${P[3].combust?' (combust)':''}, Jupiter in the ${ord(H(4))}; D-24 Lagna ${SG[d24.ascSign]} - score ${eduScore} of 7`,
+     tradition:"Vidyā bhāvas and Siddhāṁśa - Bṛhat Parāśara Horā Śāstra"}]);
+
+  /* --- foreign studies & settlement abroad: 12th, 9th, Rahu --- */
+  const rahuH=P[7].house, ketuH=P[8].house;
+  const foreign=(occ(12).length?1:0)+([12,9,3,7].includes(H(l4))?2:0)+([12,9].includes(rahuH)?2:0)
+    +(!DUS.includes(H(l12))?1:0)+([12,9,7].includes(H(l9))?1:0)+(DUAL_SIGNS.includes(P[l12].sign)?1:0);
+  const fVerdict=foreign>=4?'strongly indicated':foreign>=2?'indicated as a real possibility':'not strongly indicated';
+  out.push(['Foreign studies, travel & settlement abroad',
+    `The 12th (${SG[(asc+11)%12]}) is the bhāva of distant lands and residence away from one's birthplace; its lord ${PL[l12]} sits in the ${ord(H(l12))}${occ(12).length?`, and the 12th carries ${occ(12).map(x=>PL[x]).join(' & ')}`:''}. The 9th (long journeys and higher learning) is ruled by ${PL[l9]} in the ${ord(H(l9))}, the 4th (homeland, roots) by ${PL[l4]} in the ${ord(H(l4))} - a 4th lord in the 12th, 9th or 3rd being the classical mark of leaving home. Rāhu, the graha of the foreign and the unfamiliar, is in the ${ord(rahuH)} and Ketu in the ${ord(ketuH)}. Foreign residence or study is <b>${fVerdict}</b>. ${foreign>=2?`The activating windows are ${mdSpan(vim,l12)} and ${mdSpan(vim,l9)}, and Rāhu's own period - ${mdSpan(vim,7)} - is the one the texts tie most directly to going abroad.`:'Travel is likelier than settlement; the chart keeps its roots close.'}`,
+    {rule:"The 12th bhāva governs foreign lands and residence away from birth, the 9th long journeys and higher learning. A 4th lord placed in the 12th, 9th or 3rd indicates leaving the homeland, and Rāhu in the 9th or 12th reinforces it",
+     chart:`12th lord ${PL[l12]} in the ${ord(H(l12))}, 9th lord ${PL[l9]} in the ${ord(H(l9))}, 4th lord ${PL[l4]} in the ${ord(H(l4))}; Rāhu in the ${ord(rahuH)}, Ketu in the ${ord(ketuH)}; 12th occupied by ${occ(12).map(x=>PL[x]).join(' & ')||'none'} - score ${foreign} of 8`,
+     tradition:"12th/9th bhāva significations and Rāhu - Bṛhat Parāśara Horā Śāstra / Phaladīpikā"}]);
+
+  /* --- travel & where one settles --- */
+  const dirLord=SL[P[l4].sign];
+  out.push(['Travel & where life settles',
+    `Short journeys and mobility belong to the 3rd (lord ${PL[l3]} in the ${ord(H(l3))}${occ(3).length?`, with ${occ(3).map(x=>PL[x]).join(' & ')} in the 3rd`:''}), long journeys to the 9th, and the place one finally settles to the 4th - here ruled by ${PL[l4]} sitting in the ${ord(H(l4))} in ${SG[P[l4].sign]}, whose direction by classical attribution is <b>${PATTR[dirLord].dir}</b>. ${[3,9,12].includes(H(l4))?'With the 4th lord in a travel house, settlement tends to happen away from the birthplace - often after a period of moving before a place finally holds.':'The 4th lord holds a settled house, which favours living within reach of one\'s roots, or returning to them after a period away.'} ${occ(3).filter(x=>[2,3].includes(x)).length?'Mars or Mercury in the 3rd adds constant short-range movement - commuting, road travel, restlessness that does its thinking in motion.':''} Directional and place readings are among the softest in jyotiṣa - traditional attribution rather than a prediction of a postcode.`,
+    {rule:"The 3rd bhāva governs short journeys, the 9th long ones and the 4th the place of settlement. The 4th lord in a travel bhāva (3rd, 9th, 12th) indicates settling away from the birthplace; direction follows the classical attribution of the sign lord",
+     chart:`3rd lord ${PL[l3]} in the ${ord(H(l3))}, 4th lord ${PL[l4]} in the ${ord(H(l4))} in ${SG[P[l4].sign]} (lord ${PL[dirLord]} → ${PATTR[dirLord].dir}), 9th lord ${PL[l9]} in the ${ord(H(l9))}`,
+     tradition:PAR_C}]);
+
+  /* --- lifestyle --- */
+  const comfort=(strong(5)?2:0)+(!DUS.includes(H(5))?1:0)+(!DUS.includes(H(l4))?1:0)+(occ(4).filter(x=>[1,4,5].includes(x)).length?1:0);
+  out.push(['Lifestyle & the texture of daily life',
+    `Venus - comfort, taste and the pleasant things - sits in the ${ord(H(5))} in ${SG[P[5].sign]}${P[5].dig?` (${P[5].dig.label})`:''}; the Moon (habits, daily rhythm) in the ${ord(H(1))}; the 4th (home and ease) is ruled by ${PL[l4]} in the ${ord(H(l4))}. ${comfort>=3?'The chart favours a comfortable, aesthetically-minded life - good surroundings matter to this nativity and tend to be arranged.':comfort>=2?'Comfort is available but chosen rather than inherited: what is enjoyed is what was deliberately built.'
+      :'The chart leans plainer and more functional than luxurious. The texts do not read this as deprivation but as a temperament that finds ease elsewhere than in surroundings.'} ${strong(6)||H(6)===1?'Saturn\'s touch on the self or its own strength lends discipline and simplicity to daily habits - routine suits this chart better than spontaneity.':''} The Iṣṭa Devatā for inner practice is ${J.ISHTA_DEV[SL[jm.ishta12]]}, and the ${mdSpan(vim,SL[jm.ishta12])} is when inward life tends to take priority over outward arrangement.`,
+    {rule:"Venus governs comfort and taste, the Moon daily habit and rhythm, and the 4th bhāva domestic ease; Saturn's strength or its contact with the Lagna indicates austerity and routine",
+     chart:`Venus in ${SG[P[5].sign]}${P[5].dig?` (${P[5].dig.label})`:''} in the ${ord(H(5))}; Moon in the ${ord(H(1))}; 4th lord ${PL[l4]} in the ${ord(H(l4))}; Saturn in the ${ord(H(6))} - comfort indications ${comfort} of 5`,
+     tradition:PAR_C}]);
+
+  return out;
+}
+
 function peopleReadings(chart,ck,jm,P,asc,pro,His){
   const out=[];
   out.push(['Spouse (kārakas: Venus / 7th; Darakāraka; Upapada)',`Rahu/7th-lord placement, a ${SG[jm.UL]} Upapada and Darakāraka ${ck[6].name} point to a ${SG[jm.UL]===4||jm.UL===4?'warm, dignified':'capable, committed'} partner - the bond deepens and steadies with time.`]);

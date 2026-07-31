@@ -1,23 +1,51 @@
 # Jāthaka - Vedic Horoscope Calculator 🕉
 
-A single-page, **fully offline** Vedic (Jyotiṣa) horoscope calculator. Enter a birth date, time and
-place and it computes a complete **28-section Janma Kundali** - entirely in your browser, with **no
-server, no AI, and no network calls at runtime**.
+A single-page, **fully offline** Vedic (Jyotiṣa) calculator with **no server, no AI, and no network calls
+at runtime**. It has two modes:
+
+- **Horoscope** - one birth chart in, a complete **30-section Janma Kundali** out.
+- **Marriage compatibility** - the groom's and bride's birth details in, an **8-section Ashtakoota
+  (36-point) Guṇa Milan** match out.
 
 **Live site:** <https://rdlohith.github.io/jathaka-horoscope/> (GitHub Pages, `main` branch, root)
 
-## What it computes
+## Horoscope mode - what it computes
 
 - Sidereal (Nirayaṇa) positions with the **Lahiri (Chitrapakṣa) ayanāṁśa**, whole-sign houses, mean-node Rāhu/Ketu
-- Pañcāṅga (tithi, vāra, nakṣatra, yoga, karaṇa) and Avakhaḍa Chakra
+- Pañcāṅga (tithi, vāra, nakṣatra, yoga, karaṇa), sunrise/sunset, moonrise/moonset, and Avakhaḍa Chakra
 - North & South Indian Rāśi charts, plus 15 divisional (varga) charts
 - Ashtakavarga (BAV/SAV), Shadbala, Bhavabala, Chara Kārakas, Jaimini points, Upagrahas, Gulika
-- Yogas, doshas, house-lord analysis, planetary aspects
+- Yogas (Gajakesari, Pañca Mahāpuruṣa, Kendra-Trikoṇa Rāja, Dhana, Vipareeta Rāja, Nīcha-bhaṅga Rāja…),
+  doshas (Manglik, Kāla-Sarpa, Pitru, Guru Chāṇḍāla, Kemadruma, Graha Yuddha), house-lord analysis, aspects
+- Career & finance in depth (business vs service, sector, leadership, income, savings, property,
+  inheritance, risk temperament) and education, foreign study, travel & lifestyle
 - Vimśottari (mahā + antar) and Yoginī daśās, Sade-Sati, year-by-year Gochara to 2100, near-term forecast
 - Rule-based life readings, remedies, and a branded **PDF export** (print to PDF)
 - **"Why this reading?"** - every yoga and dosha opens to show the exact classical rule that
   fired, the values from your chart that satisfied it, and the tradition it belongs to
 - Optional **device-local login** (accounts stored only in your browser; nothing is sent anywhere)
+
+## Marriage compatibility mode - what it computes
+
+Enter both nativities and each is cast in full - Rāśi (D-1) and Navāṁśa (D-9) - before any matching
+begins. The report runs to eight sections:
+
+1. **At a glance** - the score out of 36, a plain verdict, and the specific strengths and friction points
+2. **Ashtakoota** - all eight kootas (Varṇa, Vaśya, Tārā, Yoni, Graha Maitrī, Gaṇa, Bhakūṭa, Nāḍī), each
+   drawn to its own weight, using the classical tables - including the full 14×14 yoni matrix
+3. **The dosha gates** - Nāḍī and Bhakūṭa **with their classical cancellation rules applied**, shown
+   either way, because a total that has not been through these means little
+4. **Beyond the kootas** - what a Moon-to-Moon comparison misses: cross-chart 7th-lord overlay,
+   Venus/Jupiter kārakas, Manglik matching with Bhaṅga conditions, daśā overlap, and a **Navāṁśa (D-9)
+   cross-read**, which the tradition ranks above the koota total on any marital question
+5. **Area by area** - separate scores for emotional, mental, communication, family, financial,
+   long-term-stability and physical compatibility
+6. **Both charts** - D-1 and D-9 for each person, with full graha tables
+7. **Daśā & timing** - the running and upcoming periods of both charts, separating *when* from *whether*
+8. **Remedies & next steps** - traditional observances where a dosha stands, plus a ranked list of what
+   to take to a human astrologer
+
+A match can be shared as a link too - it carries both sets of birth details, so treat it accordingly.
 
 ## Accuracy
 
@@ -42,7 +70,8 @@ python3 build.py   # -> index.html
 ```
 
 Sources: `src/page.html` (markup + CSS), `src/engine.js` (core), `src/engine2.js` (extended
-sections), `src/ui.js` (rendering + UI), `src/astronomy.browser.min.js` (astronomy-engine, MIT).
+sections), `src/engine3.js` (marriage compatibility), `src/ui.js` (rendering + UI),
+`src/astronomy.browser.min.js` (astronomy-engine, MIT).
 
 ## Credits & licence
 

@@ -302,6 +302,75 @@ function detectYogas(chart){
        chart:`${p.name} in ${SIGNS[p.sign]} (${p.dig.label}), house ${p.house}`,
        tradition:"Pañca Mahāpuruṣa yogas - Parāśari / Phaladīpikā"}]);
   }});
+  /* --- Kendra-trikona (Rāja), Dhana, Vipareeta and Nīcha-bhaṅga yogas ---
+     These all work off the house-lordship map, so build it once. `lord(h)` is the
+     graha owning the h-th bhava from the Lagna; `sits(pi)` the bhava it occupies. */
+  const asc=chart.ascSign;
+  const lord=h=>SIGN_LORD[(asc+h-1)%12];
+  const sits=pi=>P[pi].house;
+  const ownedBy=pi=>{const hs=[];for(let h=1;h<=12;h++)if(lord(h)===pi)hs.push(h);return hs;};
+  const conj=(a,b)=>P[a].sign===P[b].sign;
+  const KENDRA=[1,4,7,10], TRIKONA=[1,5,9];
+  const houseList=hs=>hs.map(ORD).join('/');
+
+  // Kendra-Trikona Rāja Yoga - a quadrant lord tied to a trine lord
+  const rajaPairs=[];
+  for(let a=0;a<7;a++)for(let b=a+1;b<7;b++){
+    const oa=ownedBy(a), ob=ownedBy(b);
+    const aK=oa.some(h=>KENDRA.includes(h)), aT=oa.some(h=>TRIKONA.includes(h));
+    const bK=ob.some(h=>KENDRA.includes(h)), bT=ob.some(h=>TRIKONA.includes(h));
+    if(!((aK&&bT)||(aT&&bK)))continue;
+    if(conj(a,b)) rajaPairs.push([a,b,'conjoined in '+SIGNS[P[a].sign],oa,ob]);
+    else if(SIGN_LORD[P[a].sign]===b&&SIGN_LORD[P[b].sign]===a) rajaPairs.push([a,b,'in mutual exchange (parivartana)',oa,ob]);
+  }
+  rajaPairs.slice(0,3).forEach(([a,b,how,oa,ob])=>{
+    out.push([`Kendra-Trikoṇa Rāja Yoga (${PL_SANS[a]} · ${PL_SANS[b]})`,`${PL_SANS[a]} and ${PL_SANS[b]} link a quadrant with a trine - the classical signature of rise in status, authority and recognition earned through the affairs of those houses.`,
+      {rule:"A lord of a kendra (1/4/7/10) and a lord of a trikoṇa (1/5/9) are conjoined or exchange signs",
+       chart:`${PL_SANS[a]} rules the ${houseList(oa)}, ${PL_SANS[b]} rules the ${houseList(ob)}; they are ${how}`,
+       tradition:"Rāja yogas - Bṛhat Parāśara Horā Śāstra"}]);
+  });
+
+  // Dhana Yoga - the wealth axis (2nd and 11th) linked to each other or to a trine lord
+  const l2=lord(2), l11=lord(11), l5=lord(5), l9=lord(9);
+  const dhana=[];
+  if(sits(l2)===11) dhana.push([`the 2nd lord ${PL_SANS[l2]} occupies the 11th`,"2nd lord in the 11th"]);
+  if(sits(l11)===2) dhana.push([`the 11th lord ${PL_SANS[l11]} occupies the 2nd`,"11th lord in the 2nd"]);
+  if(l2!==l11&&conj(l2,l11)) dhana.push([`the 2nd lord ${PL_SANS[l2]} and 11th lord ${PL_SANS[l11]} are conjoined in ${SIGNS[P[l2].sign]}`,"2nd and 11th lords conjoined"]);
+  [[l5,5],[l9,9]].forEach(([lp,h])=>{ if(lp!==l2&&conj(lp,l2)) dhana.push([`the ${ORD(h)} lord ${PL_SANS[lp]} joins the 2nd lord ${PL_SANS[l2]} in ${SIGNS[P[lp].sign]}`,`${ORD(h)} lord with the 2nd lord`]);
+    if(lp!==l11&&conj(lp,l11)) dhana.push([`the ${ORD(h)} lord ${PL_SANS[lp]} joins the 11th lord ${PL_SANS[l11]} in ${SIGNS[P[lp].sign]}`,`${ORD(h)} lord with the 11th lord`]); });
+  if(dhana.length) out.push(["Dhana Yoga",`The wealth houses are linked - ${dhana.length>1?'several combinations':'a combination'} for accumulation of money and assets, most active in the daśās of the grahas involved.`,
+    {rule:"A lord of the 2nd (accumulated wealth) or the 11th (gains) occupies the other, is conjoined it, or is joined by a trikoṇa (5th/9th) lord",
+     chart:dhana.map(d=>d[0]).join('; '),tradition:"Dhana yogas - Bṛhat Parāśara Horā Śāstra"}]);
+
+  // Vipareeta Raja Yoga - Harsha / Sarala / Vimala
+  const VRY={6:["Harṣa","health, resilience and victory over rivals"],8:["Sarala","longevity, courage and survival of crises"],12:["Vimala","independence, thrift and freedom from entanglement"]};
+  [6,8,12].forEach(h=>{ const lp=lord(h), st=sits(lp);
+    if([6,8,12].includes(st)&&st!==h){ const[nm,gift]=VRY[h];
+      out.push([`${nm} Vipareeta Rāja Yoga`,`The ${ORD(h)} lord falls into another difficult house - the classical "reversal" yoga, where the affliction turns on itself and yields ${gift}. Results typically arrive after a struggle rather than easily.`,
+        {rule:`The lord of the ${ORD(h)} occupies one of the other dusthānas (6th, 8th or 12th)`,
+         chart:`${ORD(h)} lord ${PL_SANS[lp]} in ${SIGNS[P[lp].sign]}, house ${st}`,
+         tradition:"Vipareeta Rāja yogas - Phaladīpikā / Jātaka Pārijāta"}]);
+    }});
+
+  // Neecha Bhanga Raja Yoga - a debilitation cancelled by a strong dispositor
+  P.forEach(p=>{ if(p.i>6||!p.dig||p.dig.cls!=='debil')return;
+    const disp=SIGN_LORD[p.sign];                                  // lord of the sign of fall
+    const exaltHere=Object.keys(EXALT).map(Number).find(k=>EXALT[k][0]===p.sign); // graha exalted in that sign
+    const kendraL=x=>KENDRA.includes(P[x].house);
+    const kendraM=x=>KENDRA.includes(((P[x].sign-P[1].sign)%12+12)%12+1);
+    const reasons=[];
+    if(kendraL(disp)) reasons.push(`its dispositor ${PL_SANS[disp]} holds a kendra (house ${P[disp].house}) from the Lagna`);
+    else if(kendraM(disp)) reasons.push(`its dispositor ${PL_SANS[disp]} holds a kendra from the Moon`);
+    if(exaltHere!=null&&exaltHere!==p.i&&(kendraL(exaltHere)||kendraM(exaltHere)))
+      reasons.push(`${PL_SANS[exaltHere]}, which is exalted in ${SIGNS[p.sign]}, holds a kendra`);
+    if(exaltHere!=null&&exaltHere!==p.i&&conj(p.i,exaltHere)) reasons.push(`it is conjoined ${PL_SANS[exaltHere]}, the lord of its exaltation sign`);
+    if(!reasons.length)return;
+    out.push([`Nīcha-bhaṅga Rāja Yoga (${PL_SANS[p.i]})`,`${p.name} is debilitated, but the fall is cancelled - the classical reading is a rise from a low or difficult start, often more marked than a plain well-placed graha would give.`,
+      {rule:"A debilitated graha's fall is cancelled (nīcha-bhaṅga) when the lord of its sign of debilitation, or the graha exalted in that sign, stands in a kendra from the Lagna or the Moon, or is conjoined it",
+       chart:`${p.name} debilitated in ${SIGNS[p.sign]} (house ${p.house}); ${reasons.join('; and ')}`,
+       tradition:"Nīcha-bhaṅga - Bṛhat Parāśara Horā Śāstra / Phaladīpikā"}]);
+  });
+
   // Kala Sarpa (all planets between Rahu-Ketu axis)
   const rl=P[7].lon, kl=P[8].lon;
   let allBetween=true, side=null;
