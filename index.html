@@ -166,6 +166,24 @@ a,button,.btn,.theme-btn,.mini-btn,.manual-toggle,.ac-item,.celeb,.chip,.jump-ar
 body.mode-match .partner-block{display:block}
 body.mode-match #genderField{display:none}
 .partner-note{max-width:70ch;margin-bottom:14px;line-height:1.55}
+/* the showcase casts one celebrity's horoscope, so it has no meaning mid-match -
+   leaving it on screen invited a click that would silently abandon the pairing */
+body.mode-match #showcase{display:none}
+/* the matching-method note is the trust argument for compatibility mode only */
+.why-match{display:none;margin-top:22px;padding:18px 20px;border-radius:14px;
+  border:1px solid var(--line);border-left:3px solid var(--brass);background:var(--panel-2)}
+body.mode-match .why-match{display:block}
+.why-match h3{font-family:var(--serif);font-size:16px;margin:0 0 8px}
+.why-match p{font-size:13.5px;color:var(--ink-soft);margin:0 0 10px;line-height:1.65;max-width:78ch}
+.why-match ul{margin:0;padding-left:19px;font-size:13.5px;color:var(--ink-soft);line-height:1.65}
+.why-match li{margin-bottom:7px}
+.why-match b{color:var(--ink)}
+/* saved charts: in match mode each row loads into a role instead of casting */
+.hist-split{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:default}
+.hist-split:hover{border-color:var(--line-soft)}
+.hist-who{flex:1;min-width:130px}
+.hist-roles{display:flex;gap:6px}
+.hist-roles .mini-btn{white-space:nowrap}
 
 /* section nav */
 nav.jump{position:sticky;top:0;z-index:20;background:
@@ -805,10 +823,10 @@ body.show-layman .layman-note{display:block}
   <!-- ============ INPUT ============ -->
   <section class="panel form-card" id="formCard">
     <!-- two ways to use the app: one chart, or two charts matched against each other -->
-    <div class="mode-tabs" role="tablist" aria-label="What to cast">
-      <button class="mode-tab active" id="modeSingle" data-mode="single" type="button" role="tab" aria-selected="true">
+    <div class="mode-tabs" role="group" aria-label="What to cast">
+      <button class="mode-tab active" id="modeSingle" data-mode="single" type="button" aria-pressed="true">
         <b>Horoscope</b><span>One birth chart - the full 30-section Janma Kundali</span></button>
-      <button class="mode-tab" id="modeMatch" data-mode="match" type="button" role="tab" aria-selected="false">
+      <button class="mode-tab" id="modeMatch" data-mode="match" type="button" aria-pressed="false">
         <b>Marriage compatibility</b><span>Two birth charts - the 36-point Guṇa Milan match</span></button>
     </div>
     <div class="eyebrow" id="formEyebrow">Birth particulars</div>
@@ -938,6 +956,26 @@ body.show-layman .layman-note{display:block}
       <div class="factor"><div class="fk">Why the time matters</div><div class="fv">The Lagna (ascendant) moves about <b>1° every 4 minutes</b> - a whole sign every ~2 hours. An accurate birth time is what fixes the rising sign, the house framework and every divisional chart.</div><div class="fnum">4 min ≈ 1° of Lagna</div></div>
       <div class="factor"><div class="fk">Why the longitude matters</div><div class="fv">Your east-west position sets the <b>Local Sidereal Time</b> - which part of the zodiac is on the eastern horizon at your exact place and moment. A different longitude means a different Lagna degree.</div><div class="fnum">sets local sidereal time</div></div>
       <div class="factor"><div class="fk">Why the latitude matters</div><div class="fv">Your north-south position sets the <b>angle at which the ecliptic meets the horizon</b>, shaping the ascendant and the house cusps. The timezone converts your clock time to Universal Time for the ephemeris.</div><div class="fnum">shapes ascendant &amp; cusps</div></div>
+    </div>
+    <!-- shown only in compatibility mode: how the matching itself is done -->
+    <div class="why-match">
+      <h3>How the matching is done</h3>
+      <p>A marriage decision deserves to know exactly what the score is and is not. Both charts are computed
+        in full from the same ephemeris - Rāśi and Navāṁśa - before any comparison starts; nothing is looked
+        up from a nakṣatra table.</p>
+      <ul>
+        <li><b>The classical tables, unmodified.</b> All eight kootas use the published Parāśari/melāpaka
+          tables, including the full 14×14 yoni matrix and the degree-sensitive vaśya classes for Sagittarius
+          and Capricorn. Each koota shows the rule and the values from your two charts that satisfied it.</li>
+        <li><b>Doshas are read with their exceptions.</b> Nāḍī and Bhakūṭa carry 15 of the 36 points, and both
+          have cancellation rules in the texts. Those rules are applied and shown either way - a score quoted
+          without them is the usual way automated matching misleads people.</li>
+        <li><b>The score is not the whole reading.</b> Ashtakoota compares two Moons and nothing else. The
+          7th lords, Venus and Jupiter, Manglik with its bhaṅga conditions, both daśās and the Navāṁśa overlay
+          are read separately - and on marital questions the tradition ranks the Navāṁśa above the total.</li>
+        <li><b>It does not decide.</b> 18 and 28 points are traditional guidelines, not a pass mark. Where
+          something needs a human, the report says so and names it rather than resolving it for you.</li>
+      </ul>
     </div>
     <div class="why-foot">One honest boundary: the <i>astronomy</i> here is scientifically exact and the <i>jyotiṣa method</i> is faithful to the classical tradition. Astrology's predictive claims are not established by modern science - so the readings are offered in the spirit of the tradition, for reflection and cultural insight, not as proven fact or as medical, legal or financial advice.</div>
   </section>
@@ -2954,18 +2992,39 @@ function renderHistory(){
     '<button class="mini-btn" id="expBtn" type="button">⤓ Export</button>'+
     '<label class="mini-btn" for="impFile">⤒ Import<input type="file" id="impFile" accept="application/json" hidden></label></div>';
   if(!charts.length){box.innerHTML=toolbar+'<div class="hist-empty">No saved charts yet - cast one and it will appear here.</div>';wireBackup(charts);return;}
-  box.innerHTML=toolbar+charts.map((c,i)=>
-    `<button class="hist-item" data-i="${i}"><b>${esc(c.name)}</b><small>${esc(c.place)} · ${c.dob}</small></button>`).join('');
+  /* In compatibility mode a saved chart is far more useful loaded INTO the match
+     than cast on its own - saving people is exactly how you build a match later.
+     So each row offers the two roles instead of casting and throwing the match
+     away. In horoscope mode the row stays a single click-to-cast button. */
+  box.innerHTML=toolbar+charts.map((c,i)=>appMode==='match'
+    ? `<div class="hist-item hist-split"><span class="hist-who"><b>${esc(c.name)}</b><small>${esc(c.place)} · ${c.dob}</small></span>
+        <span class="hist-roles"><button class="mini-btn" type="button" data-i="${i}" data-role="groom">→ Groom</button><button class="mini-btn" type="button" data-i="${i}" data-role="bride">→ Bride</button></span></div>`
+    : `<button class="hist-item" data-i="${i}"><b>${esc(c.name)}</b><small>${esc(c.place)} · ${c.dob}</small></button>`).join('');
   wireBackup(charts);
-  box.querySelectorAll('.hist-item').forEach(b=>b.addEventListener('click',()=>{
-    const c=charts[+b.dataset.i];const[y,mo,d]=c.dob.split('-');
-    // saved charts are single nativities - recall casts that one horoscope
+  // horoscope mode: recalling a saved chart casts it
+  box.querySelectorAll('button.hist-item').forEach(b=>b.addEventListener('click',()=>{
     setMode('single');
-    $('#name').value=c.name;$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    $('#tob').value=c.tob.split(':').map(x=>x.padStart(2,'0')).join(':');$('#gender').value=c.gender||'na';
-    $('#place').value=c.place;$('#lat').value=c.lat;$('#lon').value=c.lon;$('#tz').value=c.tz;
-    $('#placeHint').textContent=`✓ ${(+c.lat).toFixed(4)}°  ${(+c.lon).toFixed(4)}°  ·  UTC${c.tz>=0?'+':''}${c.tz}`;
+    fillSaved(charts[+b.dataset.i],MAIN_IDS,mainPlace,'placeHint');
     doCompute();}));
+  // compatibility mode: load the saved person into one side, leave the other alone
+  box.querySelectorAll('.hist-roles button').forEach(b=>b.addEventListener('click',()=>{
+    const c=charts[+b.dataset.i], groom=b.dataset.role==='groom';
+    fillSaved(c,groom?MAIN_IDS:PARTNER_IDS,groom?mainPlace:partnerPlace,groom?'placeHint':'pPlaceHint');
+    $('#formErr').textContent='';
+    b.textContent='✓ loaded';setTimeout(()=>{b.textContent=groom?'→ Groom':'→ Bride';},1400);}));
+}
+/* Write a saved chart record into one of the two nativity forms. The stored
+   timezone is a plain offset, so the auto-DST zone is cleared - the saved number
+   is what was used when the chart was first cast, and it should stay authoritative. */
+function fillSaved(c,ids,place,hintId){
+  const[y,mo,d]=c.dob.split('-');
+  $('#'+ids.name).value=c.name;
+  $('#'+ids.dob).value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  $('#'+ids.tob).value=c.tob.split(':').map(x=>x.padStart(2,'0')).join(':');
+  if(ids.gender)$('#'+ids.gender).value=c.gender||'na';
+  $('#'+ids.place).value=c.place;$('#'+ids.lat).value=c.lat;$('#'+ids.lon).value=c.lon;$('#'+ids.tz).value=c.tz;
+  place.zone=null;
+  $('#'+hintId).textContent=`✓ ${(+c.lat).toFixed(4)}°  ${(+c.lon).toFixed(4)}°  ·  UTC${c.tz>=0?'+':''}${c.tz}`;
 }
 function wireBackup(charts){
   const exp=$('#expBtn');if(exp)exp.addEventListener('click',()=>{
@@ -3082,13 +3141,14 @@ function setMode(m){
   document.body.classList.toggle('mode-match',appMode==='match');
   $('#modeSingle').classList.toggle('active',appMode==='single');
   $('#modeMatch').classList.toggle('active',appMode==='match');
-  $('#modeSingle').setAttribute('aria-selected',appMode==='single'?'true':'false');
-  $('#modeMatch').setAttribute('aria-selected',appMode==='match'?'true':'false');
+  $('#modeSingle').setAttribute('aria-pressed',appMode==='single'?'true':'false');
+  $('#modeMatch').setAttribute('aria-pressed',appMode==='match'?'true':'false');
   $('#formEyebrow').textContent=appMode==='match'?'First nativity':'Birth particulars';
   $('#formTitle').textContent=appMode==='match'?"Groom's janma details":'Enter janma details';
   $('#calcBtn').textContent=appMode==='match'?'Match the two charts':'Cast the chart';
   $('#sampleBtn').textContent=appMode==='match'?'Load a sample pair':'Load a sample';
   $('#formErr').textContent='';
+  renderHistory();   // saved-chart rows differ by mode (cast vs. load into a role)
   // a report cast in the other mode no longer matches the form - clear it
   $('#report').innerHTML='';$('#report').classList.remove('show');
   $('#jumpNav').classList.remove('show');
@@ -3096,6 +3156,12 @@ function setMode(m){
 }
 $('#modeSingle').addEventListener('click',()=>setMode('single'));
 $('#modeMatch').addEventListener('click',()=>setMode('match'));
+/* Apply the remembered mode to the DOM at startup. Restoring `appMode` from
+   storage without this left the form showing Horoscope labels while the compute
+   path still expected two charts - so a returning user could press "Cast the
+   chart" and get a match report for a bride they never entered. A shared ?c=&m=
+   link calls setMode again in initLogin and correctly wins over this. */
+setMode(appMode);
 (function(){let t=LS.get('jathaka-theme');if(t)document.documentElement.setAttribute('data-theme',t);
   $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
     const nx=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',nx);LS.set('jathaka-theme',nx);if(window._stars)window._stars();});})();
@@ -3120,18 +3186,21 @@ $('#calcBtn').addEventListener('click',doCompute);
    throws with a message meant for the user. `who` names the nativity in errors so
    it is clear which of the two forms needs fixing. */
 function readNativity(ids,place,who,fallbackName,forcedGender){
-  const bad=m=>{throw new Error(who?`${who}: ${m}`:m);};
+  /* Errors carry the id of the field at fault so the caller can put the cursor
+     there. With two nativities the form is long enough that a message alone
+     leaves you hunting for which box is empty. */
+  const bad=(m,field)=>{const e=new Error(who?`${who}: ${m}`:m);e.field=field;throw e;};
   const dob=$('#'+ids.dob).value, tob=$('#'+ids.tob).value;
-  if(!dob)bad('please enter a date of birth.');
-  if(!tob)bad('please enter a time of birth - the Lagna depends on it.');
+  if(!dob)bad('please enter a date of birth.',ids.dob);
+  if(!tob)bad('please enter a time of birth - the Lagna depends on it.',ids.tob);
   let lat=parseFloat($('#'+ids.lat).value),lon=parseFloat($('#'+ids.lon).value),tz=parseFloat($('#'+ids.tz).value);
-  if(isNaN(lat)||isNaN(lon))bad('pick a birth place, or open the manual panel and enter latitude & longitude.');
+  if(isNaN(lat)||isNaN(lon))bad('pick a birth place, or open the manual panel and enter latitude & longitude.',ids.place);
   if(isNaN(tz))tz=5.5;
-  if(lat<-90||lat>90)bad('latitude must be between -90° and 90°.');
-  if(lon<-180||lon>180)bad('longitude must be between -180° and 180°.');
-  if(tz<-14||tz>14)bad('timezone must be between -14 and +14 hours from UTC.');
+  if(lat<-90||lat>90)bad('latitude must be between -90° and 90°.',ids.lat);
+  if(lon<-180||lon>180)bad('longitude must be between -180° and 180°.',ids.lon);
+  if(tz<-14||tz>14)bad('timezone must be between -14 and +14 hours from UTC.',ids.tz);
   const[y,mo,d]=dob.split('-').map(Number),[hh,mi]=tob.split(':').map(Number);
-  if(!y||y<1700||y>2200)bad('please enter a birth year between 1700 and 2200 (the ephemeris range).');
+  if(!y||y<1700||y>2200)bad('please enter a birth year between 1700 and 2200 (the ephemeris range).',ids.dob);
   const rz=resolveTz(tz,place.zone,y,mo,d,hh,mi);tz=rz.tz; // DST-aware offset when a known zone is selected
   return {y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:place.zone,
     name:$('#'+ids.name).value.trim()||fallbackName,
@@ -3153,8 +3222,18 @@ function doCompute(){
   try{
     // in match mode the two roles ARE the gender the classical tables are reckoned from
     gInput=readNativity(MAIN_IDS,mainPlace,match?'Groom':'',match?'The groom':'This nativity',match?'male':null);
-    if(match)bInput=readNativity(PARTNER_IDS,partnerPlace,'Bride','The bride','female');
-  }catch(e){err.textContent=e.message;return;}
+    if(match){
+      bInput=readNativity(PARTNER_IDS,partnerPlace,'Bride','The bride','female');
+      /* Matching a chart against itself yields a meaningless score (identical
+         Moons make Nāḍī dosha certain), and it is always a data-entry slip. */
+      const same=['y','mo','d','hh','mi','lat','lon','tz'].every(k=>gInput[k]===bInput[k]);
+      if(same){const e=new Error('Both sets of birth details are identical - enter the second person\'s own date, time and place.');
+        e.field='pDob';throw e;}
+    }
+  }catch(e){err.textContent=e.message;
+    if(e.field){const f=$('#'+e.field);
+      if(f){smoothTo(f.closest('.field')||f);setTimeout(()=>{try{f.focus({preventScroll:true});}catch(_){f.focus();}},260);}}
+    return;}
   lastInput=gInput;
   try{gChart=castChart(gInput);
     if(bInput)bChart=castChart(bInput);

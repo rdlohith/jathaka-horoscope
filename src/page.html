@@ -166,6 +166,24 @@ a,button,.btn,.theme-btn,.mini-btn,.manual-toggle,.ac-item,.celeb,.chip,.jump-ar
 body.mode-match .partner-block{display:block}
 body.mode-match #genderField{display:none}
 .partner-note{max-width:70ch;margin-bottom:14px;line-height:1.55}
+/* the showcase casts one celebrity's horoscope, so it has no meaning mid-match -
+   leaving it on screen invited a click that would silently abandon the pairing */
+body.mode-match #showcase{display:none}
+/* the matching-method note is the trust argument for compatibility mode only */
+.why-match{display:none;margin-top:22px;padding:18px 20px;border-radius:14px;
+  border:1px solid var(--line);border-left:3px solid var(--brass);background:var(--panel-2)}
+body.mode-match .why-match{display:block}
+.why-match h3{font-family:var(--serif);font-size:16px;margin:0 0 8px}
+.why-match p{font-size:13.5px;color:var(--ink-soft);margin:0 0 10px;line-height:1.65;max-width:78ch}
+.why-match ul{margin:0;padding-left:19px;font-size:13.5px;color:var(--ink-soft);line-height:1.65}
+.why-match li{margin-bottom:7px}
+.why-match b{color:var(--ink)}
+/* saved charts: in match mode each row loads into a role instead of casting */
+.hist-split{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:default}
+.hist-split:hover{border-color:var(--line-soft)}
+.hist-who{flex:1;min-width:130px}
+.hist-roles{display:flex;gap:6px}
+.hist-roles .mini-btn{white-space:nowrap}
 
 /* section nav */
 nav.jump{position:sticky;top:0;z-index:20;background:
@@ -805,10 +823,10 @@ body.show-layman .layman-note{display:block}
   <!-- ============ INPUT ============ -->
   <section class="panel form-card" id="formCard">
     <!-- two ways to use the app: one chart, or two charts matched against each other -->
-    <div class="mode-tabs" role="tablist" aria-label="What to cast">
-      <button class="mode-tab active" id="modeSingle" data-mode="single" type="button" role="tab" aria-selected="true">
+    <div class="mode-tabs" role="group" aria-label="What to cast">
+      <button class="mode-tab active" id="modeSingle" data-mode="single" type="button" aria-pressed="true">
         <b>Horoscope</b><span>One birth chart - the full 30-section Janma Kundali</span></button>
-      <button class="mode-tab" id="modeMatch" data-mode="match" type="button" role="tab" aria-selected="false">
+      <button class="mode-tab" id="modeMatch" data-mode="match" type="button" aria-pressed="false">
         <b>Marriage compatibility</b><span>Two birth charts - the 36-point Guṇa Milan match</span></button>
     </div>
     <div class="eyebrow" id="formEyebrow">Birth particulars</div>
@@ -938,6 +956,26 @@ body.show-layman .layman-note{display:block}
       <div class="factor"><div class="fk">Why the time matters</div><div class="fv">The Lagna (ascendant) moves about <b>1° every 4 minutes</b> - a whole sign every ~2 hours. An accurate birth time is what fixes the rising sign, the house framework and every divisional chart.</div><div class="fnum">4 min ≈ 1° of Lagna</div></div>
       <div class="factor"><div class="fk">Why the longitude matters</div><div class="fv">Your east-west position sets the <b>Local Sidereal Time</b> - which part of the zodiac is on the eastern horizon at your exact place and moment. A different longitude means a different Lagna degree.</div><div class="fnum">sets local sidereal time</div></div>
       <div class="factor"><div class="fk">Why the latitude matters</div><div class="fv">Your north-south position sets the <b>angle at which the ecliptic meets the horizon</b>, shaping the ascendant and the house cusps. The timezone converts your clock time to Universal Time for the ephemeris.</div><div class="fnum">shapes ascendant &amp; cusps</div></div>
+    </div>
+    <!-- shown only in compatibility mode: how the matching itself is done -->
+    <div class="why-match">
+      <h3>How the matching is done</h3>
+      <p>A marriage decision deserves to know exactly what the score is and is not. Both charts are computed
+        in full from the same ephemeris - Rāśi and Navāṁśa - before any comparison starts; nothing is looked
+        up from a nakṣatra table.</p>
+      <ul>
+        <li><b>The classical tables, unmodified.</b> All eight kootas use the published Parāśari/melāpaka
+          tables, including the full 14×14 yoni matrix and the degree-sensitive vaśya classes for Sagittarius
+          and Capricorn. Each koota shows the rule and the values from your two charts that satisfied it.</li>
+        <li><b>Doshas are read with their exceptions.</b> Nāḍī and Bhakūṭa carry 15 of the 36 points, and both
+          have cancellation rules in the texts. Those rules are applied and shown either way - a score quoted
+          without them is the usual way automated matching misleads people.</li>
+        <li><b>The score is not the whole reading.</b> Ashtakoota compares two Moons and nothing else. The
+          7th lords, Venus and Jupiter, Manglik with its bhaṅga conditions, both daśās and the Navāṁśa overlay
+          are read separately - and on marital questions the tradition ranks the Navāṁśa above the total.</li>
+        <li><b>It does not decide.</b> 18 and 28 points are traditional guidelines, not a pass mark. Where
+          something needs a human, the report says so and names it rather than resolving it for you.</li>
+      </ul>
     </div>
     <div class="why-foot">One honest boundary: the <i>astronomy</i> here is scientifically exact and the <i>jyotiṣa method</i> is faithful to the classical tradition. Astrology's predictive claims are not established by modern science - so the readings are offered in the spirit of the tradition, for reflection and cultural insight, not as proven fact or as medical, legal or financial advice.</div>
   </section>
