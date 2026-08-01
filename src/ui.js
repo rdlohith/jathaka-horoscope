@@ -397,7 +397,11 @@ const pickCity=c=>mainPlace.pick(c);
    and the compute path all key off this one value. */
 let appMode=LS.get('jathaka-mode')==='match'?'match':'single';
 function setMode(m){
-  appMode=(m==='match')?'match':'single';
+  const next=(m==='match')?'match':'single';
+  /* Re-clicking the mode you are already in is a normal thing to do when
+     re-orienting. Only an actual change invalidates the report on screen. */
+  const changed=next!==appMode;
+  appMode=next;
   LS.set('jathaka-mode',appMode);
   document.body.classList.toggle('mode-match',appMode==='match');
   $('#modeSingle').classList.toggle('active',appMode==='single');
@@ -410,10 +414,12 @@ function setMode(m){
   $('#sampleBtn').textContent=appMode==='match'?'Load a sample pair':'Load a sample';
   $('#formErr').textContent='';
   renderHistory();   // saved-chart rows differ by mode (cast vs. load into a role)
-  // a report cast in the other mode no longer matches the form - clear it
-  $('#report').innerHTML='';$('#report').classList.remove('show');
-  $('#jumpNav').classList.remove('show');
-  const mb=$('#mobileBar');if(mb)mb.classList.remove('show');
+  if(changed){
+    // a report cast in the other mode no longer matches the form - clear it
+    $('#report').innerHTML='';$('#report').classList.remove('show');
+    $('#jumpNav').classList.remove('show');
+    const mb=$('#mobileBar');if(mb)mb.classList.remove('show');
+  }
 }
 $('#modeSingle').addEventListener('click',()=>setMode('single'));
 $('#modeMatch').addEventListener('click',()=>setMode('match'));
@@ -493,7 +499,19 @@ function doCompute(){
     }
   }catch(e){err.textContent=e.message;
     if(e.field){const f=$('#'+e.field);
-      if(f){smoothTo(f.closest('.field')||f);setTimeout(()=>{try{f.focus({preventScroll:true});}catch(_){f.focus();}},260);}}
+      if(f){
+        /* Latitude, longitude and timezone live in a panel that is collapsed by
+           default. Complaining about a field the user cannot see - and focusing
+           a display:none input, which silently does nothing - is worse than no
+           guidance at all, so open the panel that holds it first. */
+        const row=f.closest('.manual-row');
+        if(row&&!row.classList.contains('show')){
+          const tog=(row.closest('.form-grid')||document).querySelector('.manual-toggle');
+          if(tog)tog.click();
+        }
+        smoothTo(f.closest('.field')||f);
+        setTimeout(()=>{try{f.focus({preventScroll:true});}catch(_){f.focus();}},260);
+      }}
     return;}
   lastInput=gInput;
   try{gChart=castChart(gInput);
