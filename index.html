@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<title>Jāthaka ॐ - Vedic Horoscope Calculator | Offline Janma Kundali</title>
+<title>Jāthaka ॐ - Vedic Horoscope & Marriage Matching | Offline Janma Kundali</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Cast a complete 28-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - computed entirely in your browser. Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
+<meta name="description" content="Cast a complete 30-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - or match two charts with the 36-point Ashtakoota Guṇa Milan. Computed entirely in your browser: Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
 <meta name="author" content="Jāthaka">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme:light)">
@@ -16,16 +16,16 @@
 <!-- link previews (WhatsApp / Slack / X / iMessage) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Jāthaka">
-<meta property="og:title" content="Jāthaka - Vedic Horoscope Calculator">
-<meta property="og:description" content="A complete 28-section janma kundali - Lagna, nakṣatra, vargas, daśā and transits - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta property="og:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
+<meta property="og:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching with the Nāḍī and Bhakūṭa cancellation rules - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
 <meta property="og:url" content="https://rdlohith.github.io/jathaka-horoscope/">
 <meta property="og:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator">
+<meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator and marriage matching">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Jāthaka - Vedic Horoscope Calculator">
-<meta name="twitter:description" content="A complete 28-section janma kundali cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta name="twitter:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
+<meta name="twitter:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
 <meta name="twitter:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <style>
 /* ============ Brass & Indigo design system ============ */
@@ -544,7 +544,15 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
 .koota .kpts{font-family:var(--mono);font-size:12.5px;font-weight:600;text-align:right;
   font-variant-numeric:tabular-nums}
 .koota .kbody{grid-column:1/-1;font-size:13px;color:var(--ink-soft);margin-top:-2px;line-height:1.55}
-@media (max-width:600px){.koota{grid-template-columns:1fr 52px}.koota .ktrack{grid-column:1/-1;order:3}}
+/* narrow screens: name and score share the top row, then the bar, then the text -
+   the bar has to stay next to what it measures, not drift below the paragraph */
+@media (max-width:600px){
+  .koota{grid-template-columns:1fr auto;row-gap:8px}
+  .koota .kn{order:1}
+  .koota .kpts{order:2}
+  .koota .ktrack{order:3;grid-column:1/-1}
+  .koota .kbody{order:4;grid-column:1/-1;margin-top:0}
+}
 /* dosha gates - the exception checks that decide whether the score means anything */
 .gate{padding:14px 17px;border-radius:12px;border:1px solid var(--line);background:var(--panel);
   border-left:3px solid var(--brass);margin-bottom:11px}
@@ -2843,6 +2851,9 @@ function renderShowcase(){
   F.innerHTML=CELEBS.filter(c=>c[1]==='F').map(card).join('');
   $$('#showcase .celeb').forEach(b=>b.addEventListener('click',()=>{
     const c=CELEBS.find(x=>x[0]===b.dataset.name);if(!c)return;
+    // a showcase chart is one person - drop back to Horoscope mode, or the compute
+    // would go looking for a bride who was never entered
+    setMode('single');
     $('#name').value=c[0];$('#dob').value=c[2];$('#tob').value=c[3];$('#gender').value=c[1]==='F'?'female':'male';
     placeInput.value=c[4];$('#lat').value=c[5];$('#lon').value=c[6];$('#tz').value=c[7];
     mainPlace.zone=zoneForCity((c[4].split(',')[0]||'').trim(),c[4]);
@@ -2948,6 +2959,8 @@ function renderHistory(){
   wireBackup(charts);
   box.querySelectorAll('.hist-item').forEach(b=>b.addEventListener('click',()=>{
     const c=charts[+b.dataset.i];const[y,mo,d]=c.dob.split('-');
+    // saved charts are single nativities - recall casts that one horoscope
+    setMode('single');
     $('#name').value=c.name;$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     $('#tob').value=c.tob.split(':').map(x=>x.padStart(2,'0')).join(':');$('#gender').value=c.gender||'na';
     $('#place').value=c.place;$('#lat').value=c.lat;$('#lon').value=c.lon;$('#tz').value=c.tz;
@@ -3256,7 +3269,8 @@ const BASE_SECTIONS=[['sum','At a Glance'],['birth','Birth Chart'],['snapshot','
    render actually used. */
 const MATCH_SECTIONS=[['mglance','Match at a Glance'],['mkoota','Ashtakoota (36 pts)'],
 ['mgates','Nāḍī & Bhakūṭa Doshas'],['mlayers','Beyond the Kootas'],['mareas','Area by Area'],
-['mcharts','Both Charts · D-1 & D-9'],['mdasha','Daśā & Timing'],['mremedy','Remedies & Next Steps']];
+['mcharts','Both Charts · D-1 & D-9'],['mdasha','Daśā & Timing'],['mremedy','Remedies & Next Steps'],
+['mgloss','Glossary']];
 let SECTIONS=BASE_SECTIONS;
 
 /* plain-English one-liner for each section (shown when "Plain English" is on) */
@@ -3291,6 +3305,7 @@ mareas:"A separate verdict for each part of married life - feelings, thinking, t
 mcharts:"Both birth charts side by side, in the two forms that matter for marriage: the main chart and the Navāṁśa.",
 mdasha:"Which planetary periods each of you is running now and next, and what that says about timing.",
 mremedy:"Traditional observances where a dosha stands, and the specific things worth asking a human astrologer about.",
+mgloss:"Plain-English meanings of the Sanskrit terms used in this match report.",
 vargas:"Zoom-in charts, each dedicated to one life-area (marriage, career, health, and more).",
 dasha:"Your life timeline: which planet 'rules' each stretch of years, and the sub-periods within.",
 sadesati:"Where the slow planets are transiting now, including Saturn's famous 7.5-year Sade-Sati.",
@@ -3696,7 +3711,7 @@ $('#jumpInner').addEventListener('click',e=>{const a=e.target.closest('a');if(!a
 
 /* ---- nav rail affordances ----------------------------------------------
    The scrollbar is hidden in CSS; these keep the end-fades, the arrows and the
-   "n / 28" counter honest, so it is obvious there is more nav off-screen. */
+   "n / total" counter honest, so it is obvious there is more nav off-screen. */
 function railUpdate(){
   const rail=$('#jumpRail'),inner=$('#jumpInner');if(!rail||!inner)return;
   const max=inner.scrollWidth-inner.clientWidth,x=inner.scrollLeft;
@@ -3953,6 +3968,37 @@ function renderMatchReport(gChart,gInput,bChart,bInput){
     <p class="disc-inline">Nothing in this report is generated by a language model. Every line is the output of
       a fixed classical test applied to the two computed charts, so the same two births always produce the same
       text - and each verdict opens to show the rule it came from.</p>`);
+
+  /* ---------- 09 GLOSSARY ----------
+     A match report is the one most likely to be read by people who have never
+     opened an astrology text - often a whole family - and it carries the densest
+     Sanskrit in the app. So it gets its own glossary rather than borrowing the
+     horoscope one, covering the matching vocabulary specifically. */
+  const MGLOSS=[
+    ['Guṇa Milan','The traditional 36-point compatibility score, made up of the eight kootas below.'],
+    ['Koota','One of the eight tests in Guṇa Milan. Each is worth a different number of points.'],
+    ['Varṇa','Spiritual outlook and sense of duty. Worth 1 point - the lightest of the eight.'],
+    ['Vaśya','The pull and balance of influence between the pair. Worth 2 points.'],
+    ['Tārā','Mutual health and general wellbeing, counted between the two birth stars. Worth 3.'],
+    ['Yoni','Physical and instinctive compatibility, keyed to an animal symbol per nakṣatra. Worth 4.'],
+    ['Graha Maitrī','Mental compatibility, from the friendship of the two Moon-sign rulers. Worth 5 - and it can cancel other doshas.'],
+    ['Gaṇa','Temperament class: Deva (gentle), Manuṣya (human), Rākṣasa (forceful). Worth 6.'],
+    ['Bhakūṭa','Emotional bonding and household/financial harmony, from the distance between the Moon-signs. Worth 7.'],
+    ['Nāḍī','Constitution and the health of children. Worth 8 - the heaviest single koota.'],
+    ['Dosha','An affliction or blemish in the match. Most have classical conditions that cancel them.'],
+    ['Cancellation (bhaṅga)','A classical rule that sets a dosha aside. A dosha with a cancellation in force is traditionally treated as not operating.'],
+    ['Manglik / Kuja dosha','Mars placed in certain houses, traditionally read as straining marriage. It cancels when both partners carry it.'],
+    ['Navāṁśa (D-9)','A second chart derived from the first. The tradition uses it, not the birth chart alone, to judge marriage.'],
+    ['Rāśi (D-1)','The main birth chart - the sky as it stood at birth.'],
+    ['Lagna','The sign rising on the eastern horizon at birth; the starting point of the chart.'],
+    ['Nakṣatra / pada','One of 27 lunar mansions and its quarter. The Moon\'s nakṣatra drives most of the matching.'],
+    ['Daśā','A planetary period. Vimśottari daśā divides a life into stretches ruled by each graha.'],
+    ['Kāraka','A planet that stands for a subject - Venus for love and comfort, Jupiter for growth and commitment.'],
+    ['Muhūrta','An auspicious time chosen for an event, such as the wedding itself.']];
+  add('mgloss',secHead('mgloss','Glossary - the Matching Vocabulary')+
+    `<p class="para">Every Sanskrit term used in this report, in plain English. Nothing here needs prior
+      knowledge of astrology to follow.</p>
+    <div class="tbl-wrap"><table><tbody>${MGLOSS.map(g=>`<tr><td style="white-space:nowrap"><b>${g[0]}</b></td><td class="muted">${g[1]}</td></tr>`).join('')}</tbody></table></div>`);
 
   /* plain-English glosses under each section head (shown when the toggle is on) */
   $$('#report section.rpt').forEach(s=>{const g=LAYMAN[s.id.replace('sec-','')];

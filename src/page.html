@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<title>Jāthaka ॐ - Vedic Horoscope Calculator | Offline Janma Kundali</title>
+<title>Jāthaka ॐ - Vedic Horoscope & Marriage Matching | Offline Janma Kundali</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Cast a complete 28-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - computed entirely in your browser. Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
+<meta name="description" content="Cast a complete 30-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - or match two charts with the 36-point Ashtakoota Guṇa Milan. Computed entirely in your browser: Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
 <meta name="author" content="Jāthaka">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme:light)">
@@ -16,16 +16,16 @@
 <!-- link previews (WhatsApp / Slack / X / iMessage) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Jāthaka">
-<meta property="og:title" content="Jāthaka - Vedic Horoscope Calculator">
-<meta property="og:description" content="A complete 28-section janma kundali - Lagna, nakṣatra, vargas, daśā and transits - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta property="og:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
+<meta property="og:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching with the Nāḍī and Bhakūṭa cancellation rules - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
 <meta property="og:url" content="https://rdlohith.github.io/jathaka-horoscope/">
 <meta property="og:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator">
+<meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator and marriage matching">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Jāthaka - Vedic Horoscope Calculator">
-<meta name="twitter:description" content="A complete 28-section janma kundali cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta name="twitter:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
+<meta name="twitter:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
 <meta name="twitter:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <style>
 /* ============ Brass & Indigo design system ============ */
@@ -544,7 +544,15 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
 .koota .kpts{font-family:var(--mono);font-size:12.5px;font-weight:600;text-align:right;
   font-variant-numeric:tabular-nums}
 .koota .kbody{grid-column:1/-1;font-size:13px;color:var(--ink-soft);margin-top:-2px;line-height:1.55}
-@media (max-width:600px){.koota{grid-template-columns:1fr 52px}.koota .ktrack{grid-column:1/-1;order:3}}
+/* narrow screens: name and score share the top row, then the bar, then the text -
+   the bar has to stay next to what it measures, not drift below the paragraph */
+@media (max-width:600px){
+  .koota{grid-template-columns:1fr auto;row-gap:8px}
+  .koota .kn{order:1}
+  .koota .kpts{order:2}
+  .koota .ktrack{order:3;grid-column:1/-1}
+  .koota .kbody{order:4;grid-column:1/-1;margin-top:0}
+}
 /* dosha gates - the exception checks that decide whether the score means anything */
 .gate{padding:14px 17px;border-radius:12px;border:1px solid var(--line);background:var(--panel);
   border-left:3px solid var(--brass);margin-bottom:11px}
