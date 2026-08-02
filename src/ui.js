@@ -1310,7 +1310,8 @@ function renderMatchReport(gChart,gInput,bChart,bInput){
         ${cur?`(${jdMY(cur.st)} - ${jdMY(cur.en)})`:''}${ad?`, <b>${PL[ad.lord]}</b> antardaśā (${jdMY(ad.st)} - ${jdMY(ad.en)})`:''}${pd?`, <b>${PL[pd.lord]}</b> pratyantardaśā (${jdFmt(pd.st)} - ${jdFmt(pd.en)})`:''}.
         Tone: ${ds.curTesting?'a testing period':'a supportive period'} for domestic stability.</p>
       <div class="tbl-wrap"><table><thead><tr><th>Next mahādaśās</th><th>From</th><th>To</th></tr></thead><tbody>
-        ${upcoming.map(x=>`<tr><td>${PL[x.lord]}</td><td>${jdMY(x.st)}</td><td>${jdMY(x.en)}</td></tr>`).join('')}
+        ${upcoming.length?upcoming.map(x=>`<tr><td>${PL[x.lord]}</td><td>${jdMY(x.st)}</td><td>${jdMY(x.en)}</td></tr>`).join('')
+          :'<tr><td colspan="3" class="muted">The 120-year Vimśottari cycle has run its course for this nativity - no further mahādaśā remains.</td></tr>'}
       </tbody></table></div></div>`;
   };
   const dashaLayer=m.layers.find(l=>l.name==='Daśā compatibility');

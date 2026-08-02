@@ -287,7 +287,15 @@ const SUPPORT_H=[1,2,4,5,7,9,10,11], FRICTION_H=[6,8,12];
 function deepLayers(A,B,labA,labB){
   const out=[];
   const dsA=dashaState(A), dsB=dashaState(B);
-  const dashaLine=`${labA}: ${dsA.curName} mahādaśā (${dsA.adName} antardaśā) now, ${dsA.nextName} next. ${labB}: ${dsB.curName} mahādaśā (${dsB.adName} antardaśā) now, ${dsB.nextName} next.`;
+  /* The Vimśottari cycle spans 120 years, so for a birth far enough in the past
+     it has simply run out and there is no running period to name. Say that
+     plainly rather than printing empty placeholders. */
+  const CYCLE_DONE="the 120-year Vimśottari cycle has completed, so no period is running";
+  const dashaPhrase=ds=>ds.cur
+    ?`${ds.curName} mahādaśā (${ds.adName} antardaśā) now, ${ds.nextName} next`
+    :CYCLE_DONE;
+  const dashaTone=ds=>ds.cur&&DASHA_TONE[ds.curLord]?DASHA_TONE[ds.curLord]:CYCLE_DONE;
+  const dashaLine=`${labA}: ${dashaPhrase(dsA)}. ${labB}: ${dashaPhrase(dsB)}.`;
 
   /* -- 7th house / 7th lord cross-reading -- */
   const cross=(C,D,lc,ld)=>{
@@ -351,7 +359,7 @@ function deepLayers(A,B,labA,labB){
   const testing=[dsA.curTesting&&`${labA} is in a ${dsA.curName} mahādaśā`,dsB.curTesting&&`${labB} is in a ${dsB.curName} mahādaśā`,
     dsA.nextTesting&&`${labA} moves into ${dsA.nextName} next`,dsB.nextTesting&&`${labB} moves into ${dsB.nextName} next`].filter(Boolean);
   out.push({name:"Daśā compatibility",strength:testing.length===0?"strong":testing.length<=1?"moderate":"weak",
-    detail:`${labA}: ${dsA.curName} mahādaśā (${dsA.adName} antardaśā), ${DASHA_TONE[dsA.curLord]}; ${dsA.nextName} follows. ${labB}: ${dsB.curName} mahādaśā (${dsB.adName} antardaśā), ${DASHA_TONE[dsB.curLord]}; ${dsB.nextName} follows.`,
+    detail:`${labA}: ${dsA.cur?`${dsA.curName} mahādaśā (${dsA.adName} antardaśā), ${dashaTone(dsA)}; ${dsA.nextName} follows`:CYCLE_DONE}. ${labB}: ${dsB.cur?`${dsB.curName} mahādaśā (${dsB.adName} antardaśā), ${dashaTone(dsB)}; ${dsB.nextName} follows`:CYCLE_DONE}.`,
     plain:testing.length===0?"Both partners are running periods that support settling down and staying settled - a good window for the marriage itself and for its first years."
       :testing.length<=1?`One testing period is in play (${testing[0]}). The classical reading is that the strain belongs to that partner's own karma rather than to the marriage, and the other partner's steadier period carries the pair.`
       :`Several testing periods overlap: ${testing.join('; ')}. Worth knowing in advance - Saturn, Rāhu, Ketu and Mars periods bring their own pressure, and a marriage beginning inside them is often blamed for difficulties that belong to the daśā.`,
