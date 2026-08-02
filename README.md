@@ -19,7 +19,8 @@ at runtime**. It has two modes:
   doshas (Manglik, Kāla-Sarpa, Pitru, Guru Chāṇḍāla, Kemadruma, Graha Yuddha), house-lord analysis, aspects
 - Career & finance in depth (business vs service, sector, leadership, income, savings, property,
   inheritance, risk temperament) and education, foreign study, travel & lifestyle
-- Vimśottari (mahā + antar) and Yoginī daśās, Sade-Sati, year-by-year Gochara to 2100, near-term forecast
+- Vimśottari daśā to three levels (mahā → antar → **pratyantar**) and Yoginī daśā, Sade-Sati,
+  year-by-year Gochara to 2100, near-term forecast
 - Rule-based life readings, remedies, and a branded **PDF export** (print to PDF)
 - **"Why this reading?"** - every yoga and dosha opens to show the exact classical rule that
   fired, the values from your chart that satisfied it, and the tradition it belongs to
@@ -41,7 +42,8 @@ begins. The report runs to eight sections:
 5. **Area by area** - separate scores for emotional, mental, communication, family, financial,
    long-term-stability and physical compatibility
 6. **Both charts** - D-1 and D-9 for each person, with full graha tables
-7. **Daśā & timing** - the running and upcoming periods of both charts, separating *when* from *whether*
+7. **Daśā & timing** - the running mahā, antar and pratyantar periods of both charts, plus what is
+   coming, separating *when* from *whether*
 8. **Remedies & next steps** - traditional observances where a dosha stands, plus a ranked list of what
    to take to a human astrologer
 

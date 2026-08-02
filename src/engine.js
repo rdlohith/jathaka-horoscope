@@ -183,6 +183,24 @@ function vimshottari(moonLon,birthJD){
   return {list,balanceYrs:balance,startLord:lord};
 }
 
+/* Pratyantardaśā - the third level. An antardaśā subdivides in the same
+   Vimśottari order, beginning with its own lord, each share proportional to that
+   lord's years out of 120. Subdividing the antardaśā's actual span (rather than
+   recomputing from year counts) keeps the parts summing exactly to the whole, so
+   the sub-periods never drift out of their parent. */
+function pratyantardashas(ad){
+  const total=ad.en-ad.st, s=VIM_SEQ.indexOf(ad.lord), out=[];
+  let c=ad.st;
+  for(let i=0;i<9;i++){
+    const PL=VIM_SEQ[(s+i)%9];
+    const len=total*VIM_YEARS[PL]/120;
+    out.push({lord:PL,st:c,en:c+len});
+    c+=len;
+  }
+  out[8].en=ad.en;   // absorb floating-point residue into the last one
+  return out;
+}
+
 /* ================= Yogini dasha ================= */
 function yoginiDasha(moonLon,birthJD){
   const span=360/27, nk=Math.floor(moonLon/span)+1;
@@ -383,7 +401,7 @@ function detectYogas(chart){
 }
 
 /* ================= expose for UI ================= */
-window.JATHAKA={buildChart,buildVarga,vimshottari,yoginiDasha,charaKarakas,ashtakavarga,detectYogas,
+window.JATHAKA={buildChart,buildVarga,vimshottari,pratyantardashas,yoginiDasha,charaKarakas,ashtakavarga,detectYogas,
   SIGNS,SIGN_SHORT,SIGN_SANS,NAK,PLANETS,PL_SANS,PL_GLYPH,SIGN_LORD,dms,dm,dm2:dm,nakOf,signOf,ayanamsa,julday,norm360,
   // internals for extended sections (engine2):
   _:{sidLon,meanNodeSid,lagna,meanObliq,vargaSign,dignity,EXALT,COMBUST,

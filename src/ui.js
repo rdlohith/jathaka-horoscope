@@ -733,6 +733,8 @@ function renderReport(chart,input){
   const born=`${String(input.d).padStart(2,'0')} ${MON[input.mo-1]} ${input.y}, ${String(input.hh).padStart(2,'0')}:${String(input.mi).padStart(2,'0')}`;
   const curMD=vim.list.find(m=>nowJD()>=m.st&&nowJD()<m.en);
   const curAD=curMD&&curMD.ad.find(a=>nowJD()>=a.st&&nowJD()<a.en);
+  const curPDs=curAD?J.pratyantardashas(curAD):null;
+  const curPD=curPDs&&curPDs.find(p=>nowJD()>=p.st&&nowJD()<p.en);
   const nextMD=vim.list[vim.list.indexOf(curMD)+1];
   // compact mobile summary bar (sticky on phones)
   const mb=$('#mobileBar');if(mb){mb.innerHTML=`<span>La <b>${SS[asc]}</b></span><span>Moon <b>${moon.nak.name}</b></span><span>Daśā <b>${curMD?PL[curMD.lord]:'-'}</b></span>`;mb.classList.add('show');}
@@ -767,7 +769,7 @@ function renderReport(chart,input){
         <div class="stat"><div class="k">Lagna</div><div class="v">${SA[asc]}</div><div class="s">${SS[asc]} ${J.dm(chart.asc%30)} · ${chart.ascNak.name}-${chart.ascNak.pada}</div></div>
         <div class="stat"><div class="k">Rāśi (Moon)</div><div class="v">${SA[moon.sign]}</div><div class="s">${chart.planets[1].nak.name}-${moon.nak.pada} · house ${moon.house}</div></div>
         <div class="stat"><div class="k">Nakṣatra</div><div class="v">${moon.nak.name}</div><div class="s">Lord ${ava.nakLord} · pada ${moon.nak.pada}</div></div>
-        <div class="stat"><div class="k">Current Daśā</div><div class="v">${curMD?PL[curMD.lord]:'-'}</div><div class="s">${curAD?'antar '+PL[curAD.lord]:''} → ${curMD?jdMY(curMD.en):''}</div></div>
+        <div class="stat"><div class="k">Current Daśā</div><div class="v">${curMD?PL[curMD.lord]:'-'}</div><div class="s">${curAD?'antar '+PL[curAD.lord]:''}${curPD?' · pratyantar '+PL[curPD.lord]:''} → ${curMD?jdMY(curMD.en):''}</div></div>
       </div>
       <div class="two-panel">
         <div class="mini"><div class="mini-k">Yogakāraka</div><div class="mini-v">${fn.yogakaraka.length?fn.yogakaraka.map(p=>PL[p]).join(', '):'None single - best benefics '+fn.benefics.map(p=>PL[p]).join(', ')}</div></div>
@@ -984,14 +986,33 @@ function renderReport(chart,input){
   add('vargas',secHead('vargas','Divisional Charts (Vargas)','Parāśari · South Indian')+`<div class="varga-hint">← swipe to browse the divisional charts →</div><div class="varga-grid">${vcards}</div>`);
 
   /* ---------- 22 DASHA ROADMAP ---------- */
+  /* Three levels deep: mahā → antar → pratyantar. The 81 antardaśās would carry
+     729 pratyantardaśās between them, so those rows are built on first expand
+     rather than all at once - only the running one is opened up front. */
+  const pdRows=ad=>J.pratyantardashas(ad).map(p=>{const pa=nowJD()>=p.st&&nowJD()<p.en;
+    return `<div class="pd-row${pa?' active':''}"><span class="lord">${PL[p.lord]}</span>${pa?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(p.st)} - ${jdFmt(p.en)}</span></div>`;}).join('');
   let mdHtml='';vim.list.forEach((md,mi)=>{const active=nowJD()>=md.st&&nowJD()<md.en;let adHtml='';
-    md.ad.forEach(a=>{const aa=nowJD()>=a.st&&nowJD()<a.en;adHtml+=`<div class="ad-row${aa?' active':''}"><span class="lord">${PL[a.lord]}</span><span class="span mono">${jdFmt(a.st)} - ${jdFmt(a.en)}</span></div>`;});
-    mdHtml+=`<div class="md-row${active?' active':''}" data-md="${mi}"><span class="lord">${PL[md.lord]}</span>${active?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(md.st)} - ${jdFmt(md.en)}</span></div><div class="ad-wrap${active?' show':''}" data-adw="${mi}">${adHtml}</div>`;});
+    md.ad.forEach((a,ai)=>{const aa=nowJD()>=a.st&&nowJD()<a.en;
+      adHtml+=`<div class="ad-row${aa?' active':''}" data-ad="${mi}-${ai}" role="button" tabindex="0" aria-expanded="${aa?'true':'false'}" title="Show pratyantardaśās"><span class="lord">${PL[a.lord]}</span>${aa?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(a.st)} - ${jdFmt(a.en)}</span></div>`
+        +`<div class="pd-wrap${aa?' show':''}" data-pdw="${mi}-${ai}">${aa?pdRows(a):''}</div>`;});
+    mdHtml+=`<div class="md-row${active?' active':''}" data-md="${mi}" role="button" tabindex="0" aria-expanded="${active?'true':'false'}"><span class="lord">${PL[md.lord]}</span>${active?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(md.st)} - ${jdFmt(md.en)}</span></div><div class="ad-wrap${active?' show':''}" data-adw="${mi}">${adHtml}</div>`;});
   let yogHtml='';yog2Yogini(chart).forEach(y=>{const active=nowJD()>=y.st&&nowJD()<y.en;
     yogHtml+=`<div class="md-row${active?' active':''}"><span class="lord" style="width:auto">${y.name}</span><span class="muted" style="font-size:12px">(${PL[y.ruler]})</span>${active?'<span class="now">NOW</span>':''}<span class="span mono">${jdFmt(y.st)} - ${jdFmt(y.en)}</span></div>`;});
   const s22=add('dasha',secHead('dasha','Daśā Roadmap & Timing',`Vimśottari balance: ${PL[vim.startLord]} ${vim.balanceYrs.toFixed(2)} yrs`)+
-    `<div class="dasha-cols"><div><div class="eyebrow" style="margin-bottom:8px">Vimśottari Mahādaśā · Antardaśā</div><div class="dasha-list" id="vimList">${mdHtml}</div><p class="hint" style="margin-top:8px">Tap a mahādaśā to expand its sub-periods.</p></div><div><div class="eyebrow" style="margin-bottom:8px">Yoginī Daśā (36-year cycle)</div><div class="dasha-list">${yogHtml}</div></div></div>`);
-  s22.querySelectorAll('.md-row[data-md]').forEach(row=>row.addEventListener('click',()=>{const w=s22.querySelector(`[data-adw="${row.dataset.md}"]`);if(w)w.classList.toggle('show');}));
+    (curPD?`<div class="panel oneline" style="margin:0 0 16px"><b>Running now:</b> ${PL[curMD.lord]} mahādaśā → ${PL[curAD.lord]} antardaśā → <b>${PL[curPD.lord]} pratyantardaśā</b> (${jdFmt(curPD.st)} - ${jdFmt(curPD.en)}). The pratyantardaśā is the level classical practice reads for a specific question or a particular month, rather than the broad life-phase the mahādaśā describes.</div>`:'')+
+    `<div class="dasha-cols"><div><div class="eyebrow" style="margin-bottom:8px">Vimśottari Mahādaśā · Antardaśā · Pratyantardaśā</div><div class="dasha-list" id="vimList">${mdHtml}</div><p class="hint" style="margin-top:8px">Tap a mahādaśā to expand its antardaśās, then any antardaśā for its pratyantardaśās.</p></div><div><div class="eyebrow" style="margin-bottom:8px">Yoginī Daśā (36-year cycle)</div><div class="dasha-list">${yogHtml}</div></div></div>`);
+  const toggle=(el,wrap)=>{if(!wrap)return;const on=wrap.classList.toggle('show');el.setAttribute('aria-expanded',on?'true':'false');};
+  s22.querySelectorAll('.md-row[data-md]').forEach(row=>{
+    const act=()=>toggle(row,s22.querySelector(`[data-adw="${row.dataset.md}"]`));
+    row.addEventListener('click',act);
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act();}});});
+  s22.querySelectorAll('.ad-row[data-ad]').forEach(row=>{
+    const act=()=>{
+      const w=s22.querySelector(`[data-pdw="${row.dataset.ad}"]`);
+      if(w&&!w.innerHTML){const[mi,ai]=row.dataset.ad.split('-').map(Number);w.innerHTML=pdRows(vim.list[mi].ad[ai]);}
+      toggle(row,w);};
+    row.addEventListener('click',e=>{e.stopPropagation();act();});
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();act();}});});
 
   /* ---------- 23 SADE-SATI & TRANSITS ---------- */
   const satSign=ss.satSign,jupNow=signOf(J.transitLon(4,nowJD())),rahNow=signOf(J.transitLon(7,nowJD()));
@@ -1282,10 +1303,11 @@ function renderMatchReport(gChart,gInput,bChart,bInput){
     const vim=J.vimshottari(chart.planets[1].lon,chart.jd);
     const cur=vim.list.find(x=>nowJD()>=x.st&&nowJD()<x.en);
     const ad=cur&&cur.ad.find(a=>nowJD()>=a.st&&nowJD()<a.en);
+    const pd=ad&&J.pratyantardashas(ad).find(p=>nowJD()>=p.st&&nowJD()<p.en);
     const upcoming=vim.list.filter(x=>x.st>nowJD()).slice(0,3);
     return `<div class="panel sc-card"><div class="sc-head">${esc(inp.name)} <span class="muted">· ${role}</span></div>
       <p class="para" style="margin:8px 0 10px">Running: <b>${cur?PL[cur.lord]:'-'}</b> mahādaśā
-        ${cur?`(${jdMY(cur.st)} - ${jdMY(cur.en)})`:''}${ad?`, <b>${PL[ad.lord]}</b> antardaśā (${jdMY(ad.st)} - ${jdMY(ad.en)})`:''}.
+        ${cur?`(${jdMY(cur.st)} - ${jdMY(cur.en)})`:''}${ad?`, <b>${PL[ad.lord]}</b> antardaśā (${jdMY(ad.st)} - ${jdMY(ad.en)})`:''}${pd?`, <b>${PL[pd.lord]}</b> pratyantardaśā (${jdFmt(pd.st)} - ${jdFmt(pd.en)})`:''}.
         Tone: ${ds.curTesting?'a testing period':'a supportive period'} for domestic stability.</p>
       <div class="tbl-wrap"><table><thead><tr><th>Next mahādaśās</th><th>From</th><th>To</th></tr></thead><tbody>
         ${upcoming.map(x=>`<tr><td>${PL[x.lord]}</td><td>${jdMY(x.st)}</td><td>${jdMY(x.en)}</td></tr>`).join('')}
