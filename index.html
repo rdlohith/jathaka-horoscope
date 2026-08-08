@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<title>Jāthaka ॐ - Vedic Horoscope & Marriage Matching | Offline Janma Kundali</title>
+<title>Jāthaka ॐ · All Mighty Īśvara - Vedic Horoscope & Marriage Matching | Offline Janma Kundali</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Cast a complete 30-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - or match two charts with the 36-point Ashtakoota Guṇa Milan. Computed entirely in your browser: Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
+<meta name="description" content="Cast a complete 30-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - or match two charts with the 36-point Ashtakoota Guṇa Milan. Computed entirely in your browser: Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no artificial intelligence - the AI in Jāthaka AI is Almighty Īśvara.">
 <meta name="author" content="Jāthaka">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme:light)">
@@ -17,7 +17,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Jāthaka">
 <meta property="og:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
-<meta property="og:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching with the Nāḍī and Bhakūṭa cancellation rules - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta property="og:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching with the Nāḍī and Bhakūṭa cancellation rules - cast entirely in your browser. Lahiri sidereal, no internet, no artificial intelligence.">
 <meta property="og:url" content="https://rdlohith.github.io/jathaka-horoscope/">
 <meta property="og:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <meta property="og:image:width" content="1200">
@@ -25,7 +25,7 @@
 <meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator and marriage matching">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
-<meta name="twitter:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta name="twitter:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching - cast entirely in your browser. Lahiri sidereal, no internet, no artificial intelligence.">
 <meta name="twitter:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <style>
 /* ============ Brass & Indigo design system ============ */
@@ -126,6 +126,11 @@ a,button,.btn,.theme-btn,.mini-btn,.manual-toggle,.ac-item,.celeb,.chip,.jump-ar
   stroke-linecap:round;stroke-linejoin:round}
 .btn .ico{width:15px;height:15px}
 .hint{font-size:11.5px;color:var(--ink-faint)}
+/* "Time not known" - a stated limitation is worth far more than a guessed Lagna. */
+.unk{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-faint);
+  cursor:pointer;font-weight:400;letter-spacing:0}
+.unk input{width:14px;height:14px;accent-color:var(--brass);cursor:pointer;margin:0}
+input[type=time]:disabled{opacity:.45;cursor:not-allowed}
 .ac-list{position:absolute;top:100%;left:0;right:0;z-index:30;background:var(--panel);
   border:1px solid var(--line);border-radius:10px;margin-top:4px;max-height:240px;overflow:auto;
   box-shadow:var(--shadow);display:none}
@@ -370,6 +375,21 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
 .why-rule dd{margin:0;color:var(--ink-soft);line-height:1.5}
 .why-rule dd.mono{font-family:var(--mono);font-size:11.5px}
 .why-print{display:none}
+/* Strength of the indication - part 3 of the five-part contract. The colour is
+   a reading aid only; the basis text beside it is what actually justifies it. */
+.conf-pill{display:inline-block;font-family:var(--sans);font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:2px 8px;border-radius:999px;
+  border:1px solid currentColor;vertical-align:1px}
+.conf-pill.c-strong{color:#4d9a6a}
+.conf-pill.c-mod{color:var(--brass)}
+.conf-pill.c-weak{color:var(--ink-faint)}
+.conf-basis{color:var(--ink-faint);font-size:11.5px}
+/* Unknown-birth-time notice. Deliberately loud: it changes what the report claims. */
+.time-warn{border-left:3px solid var(--brass);margin-bottom:18px;padding:15px 18px}
+.time-warn .tw-h{font-family:var(--sans);font-size:11px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--brass);font-weight:700;margin-bottom:9px}
+.time-warn p{margin:0 0 8px;font-size:13.5px;line-height:1.62;color:var(--ink-soft)}
+.time-warn p:last-child{margin-bottom:0}
 @media (max-width:560px){.why-rule dl{grid-template-columns:1fr;gap:2px}
   .why-rule dt{margin-top:6px}}
 
@@ -418,6 +438,12 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   .why-rule summary:before{display:none}
   .why-screen{display:none}
   .why-print{display:inline}
+  /* the strength pill has to stay legible in a printed report too */
+  .conf-pill{font-size:7px;padding:1px 5px;letter-spacing:.09em}
+  .conf-basis{font-size:8.5px}
+  .time-warn{break-inside:avoid;page-break-inside:avoid;padding:11px 13px;margin-bottom:12px}
+  .time-warn .tw-h{font-size:8.5px}
+  .time-warn p{font-size:9.5px;line-height:1.45;margin-bottom:5px}
   .why-rule dl{background:none;border-left:1.5px solid var(--brass);padding:4px 0 4px 9px;
     margin:3px 0 0;gap:1px 10px}
   .why-rule dt{font-size:7.5px;letter-spacing:.09em}
@@ -479,6 +505,18 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
 .login-brand svg{width:40px;height:40px}
 .login-brand h1{font-family:var(--serif);font-size:24px}
 .login-brand .om{color:var(--brass)}
+.login-tag{font-family:var(--sans);font-size:10px;text-transform:uppercase;letter-spacing:.2em;
+  color:var(--brass);font-weight:700;text-align:center;margin:-4px 0 12px}
+.ishwara{color:var(--brass);font-weight:700;letter-spacing:.03em}
+.ishwara-panel{margin:26px 0 18px;padding:22px 24px;border-left:3px solid var(--brass)}
+.ishwara-panel .ip-h{font-family:var(--serif);font-size:20px;color:var(--brass);margin-bottom:12px}
+.ishwara-panel .ip-expand{font-family:var(--sans);font-size:11px;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--ink-faint);font-weight:600;white-space:nowrap}
+.ishwara-panel p{margin:0 0 10px;font-size:14px;line-height:1.68;color:var(--ink-soft)}
+.ishwara-panel p:last-child{margin-bottom:0}
+@media (max-width:560px){.ishwara-panel{padding:17px 16px}
+  .ishwara-panel .ip-h{font-size:17px}
+  .ishwara-panel .ip-expand{display:block;margin-top:4px;white-space:normal}}
 .login-sub{color:var(--ink-soft);font-size:13px;margin-bottom:22px}
 .auth-tabs{display:flex;gap:6px;background:var(--panel-2);border-radius:12px;padding:4px;margin-bottom:20px}
 .auth-tab{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:14px;font-weight:600;
@@ -773,6 +811,7 @@ body.show-layman .layman-note{display:block}
       </svg>
       <h1>Jāthaka <span class="om">ॐ</span></h1>
     </div>
+    <div class="login-tag">All Mighty Īśvara</div>
     <div class="login-sub">Sign in to save your charts on this device - or continue as a guest.</div>
     <div class="auth-tabs">
       <button class="auth-tab active" data-mode="signin" type="button">Sign in</button>
@@ -810,7 +849,7 @@ body.show-layman .layman-note{display:block}
       </svg>
       <div>
         <h1>Jāthaka <span class="om">ॐ</span></h1>
-        <div class="sub">Vedic horoscope calculator · Lahiri sidereal · computed offline</div>
+        <div class="sub"><b class="ishwara">All Mighty Īśvara</b> · Vedic horoscope calculator · Lahiri sidereal · computed offline</div>
       </div>
     </div>
     <div class="header-actions">
@@ -858,6 +897,7 @@ body.show-layman .layman-note{display:block}
       <div class="field">
         <label for="tob">Time of birth</label>
         <input id="tob" type="time" value="12:00" step="60">
+        <label class="unk"><input id="tobUnknown" type="checkbox"> Time not known / uncertain</label>
       </div>
       <div class="field" id="genderField">
         <label for="gender">Gender</label>
@@ -900,6 +940,7 @@ body.show-layman .layman-note{display:block}
         <div class="field">
           <label for="pTob">Time of birth</label>
           <input id="pTob" type="time" value="12:00" step="60">
+          <label class="unk"><input id="pTobUnknown" type="checkbox"> Time not known / uncertain</label>
         </div>
         <div class="field col-span">
           <label for="pPlace">Birth place</label>
@@ -953,7 +994,7 @@ body.show-layman .layman-note{display:block}
             <small>Validated arc-minute against pyswisseph (the Swiss Ephemeris) on real charts - every sign, degree, nakṣatra and pada matched.</small></li>
           <li><b>Lahiri ayanāṁśa, exact.</b> The precession correction to the sidereal zodiac reproduces the Swiss Ephemeris to under 0.001 arc-second across 1900-2100.</li>
           <li><b>Mean-node Rāhu &amp; Ketu.</b> The lunar nodes are the true astronomical points where the Moon's path crosses the ecliptic.</li>
-          <li><b>No internet, no AI, no guesswork.</b> The mathematics is deterministic - the same inputs always yield the same chart, and nothing is ever invented.</li>
+          <li><b>No internet, no artificial intelligence, no guesswork.</b> The mathematics is deterministic - the same inputs always yield the same chart, and nothing is ever invented.</li>
         </ul>
       </div>
       <div class="why-col trad">
@@ -992,6 +1033,25 @@ body.show-layman .layman-note{display:block}
           something needs a human, the report says so and names it rather than resolving it for you.</li>
       </ul>
     </div>
+    <!-- What the name means. Stated plainly and up front, because "AI" on an
+         astrology site will otherwise be read as a language model, which this
+         emphatically is not. -->
+    <div class="panel ishwara-panel">
+      <div class="ip-h">All Mighty Īśvara <span class="ip-expand">— the AI in Jāthaka AI</span></div>
+      <p><b>AI here stands for Almighty Īśvara</b>, the supreme being of the Vedic tradition - not
+      artificial intelligence. Every reading on this site is calculated by the power of Almighty
+      Īśvara, through the classical rules the ṛṣis set down and the real positions of the grahas at
+      the moment you were born.</p>
+      <p><b>And the calculation is real.</b> The Sun, Moon and planets are placed from the same
+      ephemeris astronomers use, to arc-second precision, validated against the Swiss Ephemeris. Your
+      Lagna is computed from the actual sidereal time at your exact latitude and longitude. The
+      Vimśottari daśā dates come from the Moon's true nakṣatra position. Nothing here is a template,
+      a horoscope column, or a guess dressed up as one.</p>
+      <p><b>No language model writes any of it.</b> Every sentence is the output of a fixed classical
+      test applied to your computed chart, which is why the same birth details always produce exactly
+      the same report - and why every reading opens to show you the rule it came from, the values in
+      your chart that satisfied it, how strongly it reads, and when it activates.</p>
+    </div>
     <div class="why-foot">One honest boundary: the <i>astronomy</i> here is scientifically exact and the <i>jyotiṣa method</i> is faithful to the classical tradition. Astrology's predictive claims are not established by modern science - so the readings are offered in the spirit of the tradition, for reflection and cultural insight, not as proven fact or as medical, legal or financial advice.</div>
   </section>
 
@@ -1016,7 +1076,7 @@ body.show-layman .layman-note{display:block}
       </div>
     </div>
     <div class="foot-credit"><span class="rule"></span>Powered by <b>Ayodhya Agarbatti</b><span class="rule"></span></div>
-    <p class="foot-note">Every chart on this page is computed on your own device from the astronomy-engine ephemeris - no internet, no AI, no tracking, and nothing sent to a server. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</p>
+    <p class="foot-note">Every chart on this page is computed on your own device from the astronomy-engine ephemeris - no internet, no artificial intelligence, no tracking, and nothing sent to a server. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</p>
   </div>
 </footer>
 </div><!-- /appWrap -->
@@ -1393,7 +1453,9 @@ function buildChart(input){
     p.nak=nakOf(p.lon);
     p.dig=dignity(p.i,p.lon);
   });
-  return {jd,asc,ascSign,ascNak:nakOf(asc),planets,input};
+  /* Carried on the chart so every downstream reading can see it, rather than
+     each section having to remember to look at the raw input. */
+  return {jd,asc,ascSign,ascNak:nakOf(asc),planets,input,timeUnknown:!!input.timeUnknown};
 }
 
 /* ================= divisional charts ================= */
@@ -1541,6 +1603,74 @@ function ashtakavarga(chart){
   return {bav,sav};
 }
 
+/* ============ STRENGTH & ACTIVATION (parts 3 and 4 of every reading) ============
+   The tradition never treats a yoga as a flat yes/no: a rāja yoga formed by a
+   debilitated, combust lord in a dusthāna is not the same claim as one formed by
+   two exalted lords in a kendra, and it does not deliver until the daśā of a
+   participating graha runs. These two helpers put numbers under that judgement so
+   the "strong / moderate / weak" label and the timing window are derived from the
+   same chart everything else is derived from - not asserted by hand per reading. */
+const KENDRA=[1,4,7,10], TRIKONA=[1,5,9], DUSTHANA=[6,8,12];
+/* Score one graha's condition. Positive is capacity to deliver its promise. */
+function grahaScore(chart,pi){
+  const p=chart.planets[pi]; if(!p)return{score:0,notes:[]};
+  let s=0; const n=[];
+  if(p.dig){ if(p.dig.label==="Exalted"){s+=2;n.push(`${PL_SANS[pi]} exalted`);}
+    else if(p.dig.label==="Own sign"){s+=1.5;n.push(`${PL_SANS[pi]} in own sign`);}
+    else if(p.dig.label==="Debilitated"){s-=2;n.push(`${PL_SANS[pi]} debilitated`);} }
+  if(p.combust){s-=1;n.push(`${PL_SANS[pi]} combust`);}
+  if(KENDRA.includes(p.house)){s+=1;n.push(`${PL_SANS[pi]} in a kendra (${ORD(p.house)})`);}
+  else if(TRIKONA.includes(p.house)){s+=1;n.push(`${PL_SANS[pi]} in a trikoṇa (${ORD(p.house)})`);}
+  else if(DUSTHANA.includes(p.house)){s-=1;n.push(`${PL_SANS[pi]} in a dusthāna (${ORD(p.house)})`);}
+  if(p.retro&&pi<7){n.push(`${PL_SANS[pi]} retrograde`);}
+  return{score:s,notes:n};
+}
+/* Grade an indication from the condition of the grahas that form it. `bias`
+   lets a caller carry in quality the placement test itself established (e.g. a
+   koota that scored full marks, or a dosha whose cancellation was met). */
+function gradeIndication(chart,pis,bias){
+  const parts=(pis||[]).map(pi=>grahaScore(chart,pi));
+  const total=parts.reduce((a,b)=>a+b.score,0)+(bias||0);
+  const per=parts.length?total/parts.length:total;
+  let level=per>=1.25?"strong":per>=-0.25?"moderate":"weak";
+  const notes=parts.flatMap(p=>p.notes);
+  let basis=notes.length?notes.join(", "):"no dignity or placement modifier applies";
+  /* Without a birth time the Lagna is a guess, and every house number this
+     grading leans on is a guess with it. The tradition's own answer is to hold
+     back, so a reading can never be called strong on a chart cast for noon. */
+  if(chart&&chart.timeUnknown&&level==="strong"){
+    level="moderate";
+    basis+=" - held back from strong because the birth time is unknown, so the house placements this rests on are provisional";
+  }
+  return{level,basis,score:total};
+}
+/* When does it activate? A result ripens in the daśā of a graha that forms it.
+   Periods carry julian days (st/en), so compare and format in that scale.
+   Rāhu and Ketu hold no signs but do hold daśās, so they count as participants
+   whenever they form the yoga. */
+const _JEPOCH=Date.UTC(2000,0,1,12);
+const jdToDate=jd=>new Date(_JEPOCH+(jd-J2000)*86400000);
+const dateToJD=dt=>J2000+(dt.getTime()-_JEPOCH)/86400000;
+function activationWindow(pis,vim,timeUnknown){
+  const list=vim&&vim.list; if(!list||!list.length)return"";
+  const set=new Set(pis||[]); if(!set.size)return"";
+  const now=dateToJD(new Date());
+  const yr=jd=>jdToDate(jd).getFullYear();
+  const mine=list.filter(d=>set.has(d.lord));
+  if(!mine.length)return"";
+  /* Vimśottari is set by the Moon's exact nakṣatra position. Over a day the Moon
+     covers about 13°, close to a whole nakṣatra, so a chart cast for noon in
+     place of a real time can shift every date below by years - not months. The
+     sequence of periods stays right; only their dates move. */
+  const caveat=timeUnknown?" (dates provisional - with no birth time the Moon's position is uncertain by up to half a nakṣatra, which can move every daśā date by several years; the order of the periods still holds)":"";
+  const running=mine.find(d=>d.st<=now&&d.en>=now);
+  if(running)return`running now - the ${PL_SANS[running.lord]} mahādaśā, to ${yr(running.en)}${caveat}`;
+  const ahead=mine.filter(d=>d.st>now);
+  if(ahead.length)return`the ${PL_SANS[ahead[0].lord]} mahādaśā, ${yr(ahead[0].st)}-${yr(ahead[0].en)}${caveat}`;
+  const last=mine[mine.length-1];
+  return`the ${PL_SANS[last.lord]} mahādaśā (${yr(last.st)}-${yr(last.en)}) has already run - this now reads as settled background disposition rather than a fresh event${caveat}`;
+}
+
 /* ================= Yogas ================= */
 /* Each yoga is [name, reading, evidence]. `evidence` is what the UI shows under
    "why this reading?" - the classical condition, the values from THIS chart that
@@ -1559,46 +1689,46 @@ function detectYogas(chart){
   // Gajakesari
   if(kendraFromMoon(4)) out.push(["Gajakesari Yoga","Jupiter in a kendra (1/4/7/10) from the Moon - confers intelligence, respect, and lasting reputation.",
     {rule:"Jupiter falls in a kendra - the 1st, 4th, 7th or 10th sign counted from the Moon",
-     chart:`Jupiter in ${sgn(4)}, the ${ORD(dist(4,1))} from the Moon in ${sgn(1)}`,tradition:PAR}]);
+     chart:`Jupiter in ${sgn(4)}, the ${ORD(dist(4,1))} from the Moon in ${sgn(1)}`,pis:[4,1],tradition:PAR}]);
   // Budhaditya
   if(P[0].sign===P[3].sign) out.push(["Budhāditya Yoga","Sun and Mercury conjoined - sharp intellect, communication skill, administrative ability.",
     {rule:"The Sun and Mercury occupy the same sign",
-     chart:`Sun and Mercury both in ${sgn(0)}`,tradition:PAR}]);
+     chart:`Sun and Mercury both in ${sgn(0)}`,pis:[0,3],tradition:PAR}]);
   // Chandra-Mangala
   if(P[1].sign===P[2].sign) out.push(["Chandra-Maṅgala Yoga","Moon with Mars - drive, enterprise, and capacity to generate wealth through effort.",
     {rule:"The Moon and Mars occupy the same sign",
-     chart:`Moon and Mars both in ${sgn(1)}`,tradition:PAR}]);
+     chart:`Moon and Mars both in ${sgn(1)}`,pis:[1,2],tradition:PAR}]);
   // Anapha / Sunapha / Durudhara (from Moon, 2nd/12th excluding Sun)
-  const around=[],aNames={2:[],12:[]};
+  const around=[],aNames={2:[],12:[]},aPis={2:[],12:[]};
   for(let i=2;i<=6;i++){if(i===0)continue; const d=dist(i,1);
-    if(d===2){around.push('2');aNames[2].push(PL_SANS[i]);} if(d===12){around.push('12');aNames[12].push(PL_SANS[i]);}}
+    if(d===2){around.push('2');aNames[2].push(PL_SANS[i]);aPis[2].push(i);} if(d===12){around.push('12');aNames[12].push(PL_SANS[i]);aPis[12].push(i);}}
   const flank=k=>aNames[k].join(' & ')+` in the ${ORD(k)} from the Moon`;
   const MOONX="counted from the Moon, excluding the Sun and the nodes";
   if(around.includes('12')&&around.includes('2')) out.push(["Durudhara Yoga","Planets flanking the Moon on both sides - material comfort and a balanced, capable temperament.",
     {rule:`Planets occupy both the 2nd and the 12th, ${MOONX}`,
-     chart:`${flank(2)}; ${flank(12)}`,tradition:PAR}]);
+     chart:`${flank(2)}; ${flank(12)}`,pis:[1].concat(aPis[2],aPis[12]),tradition:PAR}]);
   else if(around.includes('2')) out.push(["Sunapha Yoga","A planet in the 2nd from the Moon - self-earned wealth and steady standing.",
     {rule:`A planet occupies the 2nd and none the 12th, ${MOONX}`,
-     chart:`${flank(2)}; the 12th from the Moon is empty`,tradition:PAR}]);
+     chart:`${flank(2)}; the 12th from the Moon is empty`,pis:[1].concat(aPis[2]),tradition:PAR}]);
   else if(around.includes('12')) out.push(["Anapha Yoga","A planet in the 12th from the Moon - well-formed character, health, and a dignified nature.",
     {rule:`A planet occupies the 12th and none the 2nd, ${MOONX}`,
-     chart:`${flank(12)}; the 2nd from the Moon is empty`,tradition:PAR}]);
+     chart:`${flank(12)}; the 2nd from the Moon is empty`,pis:[1].concat(aPis[12]),tradition:PAR}]);
   // Kemadruma check (nothing in 2/12 from Moon, no kendra from moon, no conjunction)
   const anyWithMoon=P.some((p,i)=>i>=0&&i<=6&&i!==1&&p.sign===P[1].sign);
   if(around.length===0&&!anyWithMoon){ out.push(["Kemadruma Yoga (caution)","Moon isolated with no planets adjacent - indicates need for self-reliance; often cancelled by kendra support.",
     {rule:`No planet occupies the 2nd or the 12th ${MOONX}, and none is conjoined the Moon`,
-     chart:`Moon alone in ${sgn(1)}; both flanking signs empty`,tradition:PAR}]);}
+     chart:`Moon alone in ${sgn(1)}; both flanking signs empty`,pis:[1],tradition:PAR}]);}
   // Kendra-trikona / Raja hints: lords of trikona (1,5,9) + kendra association simplified
   // Neechabhanga hint
   P.forEach((p)=>{ if(p.dig&&p.dig.cls==="exalt"&&p.i<=6) out.push([`${PL_SANS[p.i]} exalted`,`${p.name} occupies its sign of exaltation in ${SIGNS[p.sign]} - a strong, well-placed graha in the chart.`,
     {rule:`${p.name} occupies its classical sign of exaltation (uccha)`,
-     chart:`${p.name} in ${SIGNS[p.sign]} at ${dm(p.lon%30)}, house ${p.house}`,tradition:"Classical dignity (uccha/nīcha) table"}]);});
+     chart:`${p.name} in ${SIGNS[p.sign]} at ${dm(p.lon%30)}, house ${p.house}`,pis:[p.i],tradition:"Classical dignity (uccha/nīcha) table"}]);});
   // Chamara / Malavya etc (Pancha Mahapurusha) - planet in own/exalt in kendra
   const MPY={2:"Ruchaka",4:"Hamsa",5:"Malavya",3:"Bhadra",6:"Shasha"};
   [2,4,5,3,6].forEach(pi=>{ const p=P[pi]; if([1,4,7,10].includes(p.house)&&p.dig&&(p.dig.cls==="own"||p.dig.cls==="exalt")){
     out.push([`${MPY[pi]} Mahāpuruṣa Yoga`,`${p.name} strong (own/exalted) in a kendra - a Pancha-Mahapurusha combination granting distinguished ${pi===2?"courage and leadership":pi===4?"wisdom and virtue":pi===5?"charm, comfort and artistry":pi===3?"intellect and eloquence":"discipline and endurance"}.`,
       {rule:`${p.name} stands in its own sign or exaltation AND in a kendra (house 1, 4, 7 or 10) from the Lagna`,
-       chart:`${p.name} in ${SIGNS[p.sign]} (${p.dig.label}), house ${p.house}`,
+       chart:`${p.name} in ${SIGNS[p.sign]} (${p.dig.label}), house ${p.house}`,pis:[pi],
        tradition:"Pañca Mahāpuruṣa yogas - Parāśari / Phaladīpikā"}]);
   }});
   /* --- Kendra-trikona (Rāja), Dhana, Vipareeta and Nīcha-bhaṅga yogas ---
@@ -1625,21 +1755,21 @@ function detectYogas(chart){
   rajaPairs.slice(0,3).forEach(([a,b,how,oa,ob])=>{
     out.push([`Kendra-Trikoṇa Rāja Yoga (${PL_SANS[a]} · ${PL_SANS[b]})`,`${PL_SANS[a]} and ${PL_SANS[b]} link a quadrant with a trine - the classical signature of rise in status, authority and recognition earned through the affairs of those houses.`,
       {rule:"A lord of a kendra (1/4/7/10) and a lord of a trikoṇa (1/5/9) are conjoined or exchange signs",
-       chart:`${PL_SANS[a]} rules the ${houseList(oa)}, ${PL_SANS[b]} rules the ${houseList(ob)}; they are ${how}`,
+       chart:`${PL_SANS[a]} rules the ${houseList(oa)}, ${PL_SANS[b]} rules the ${houseList(ob)}; they are ${how}`,pis:[a,b],
        tradition:"Rāja yogas - Bṛhat Parāśara Horā Śāstra"}]);
   });
 
   // Dhana Yoga - the wealth axis (2nd and 11th) linked to each other or to a trine lord
   const l2=lord(2), l11=lord(11), l5=lord(5), l9=lord(9);
-  const dhana=[];
+  const dhana=[], dhanaPis=[];
   if(sits(l2)===11) dhana.push([`the 2nd lord ${PL_SANS[l2]} occupies the 11th`,"2nd lord in the 11th"]);
   if(sits(l11)===2) dhana.push([`the 11th lord ${PL_SANS[l11]} occupies the 2nd`,"11th lord in the 2nd"]);
   if(l2!==l11&&conj(l2,l11)) dhana.push([`the 2nd lord ${PL_SANS[l2]} and 11th lord ${PL_SANS[l11]} are conjoined in ${SIGNS[P[l2].sign]}`,"2nd and 11th lords conjoined"]);
-  [[l5,5],[l9,9]].forEach(([lp,h])=>{ if(lp!==l2&&conj(lp,l2)) dhana.push([`the ${ORD(h)} lord ${PL_SANS[lp]} joins the 2nd lord ${PL_SANS[l2]} in ${SIGNS[P[lp].sign]}`,`${ORD(h)} lord with the 2nd lord`]);
-    if(lp!==l11&&conj(lp,l11)) dhana.push([`the ${ORD(h)} lord ${PL_SANS[lp]} joins the 11th lord ${PL_SANS[l11]} in ${SIGNS[P[lp].sign]}`,`${ORD(h)} lord with the 11th lord`]); });
+  [[l5,5],[l9,9]].forEach(([lp,h])=>{ if(lp!==l2&&conj(lp,l2)){ dhana.push([`the ${ORD(h)} lord ${PL_SANS[lp]} joins the 2nd lord ${PL_SANS[l2]} in ${SIGNS[P[lp].sign]}`,`${ORD(h)} lord with the 2nd lord`]); dhanaPis.push(lp); }
+    if(lp!==l11&&conj(lp,l11)){ dhana.push([`the ${ORD(h)} lord ${PL_SANS[lp]} joins the 11th lord ${PL_SANS[l11]} in ${SIGNS[P[lp].sign]}`,`${ORD(h)} lord with the 11th lord`]); dhanaPis.push(lp); } });
   if(dhana.length) out.push(["Dhana Yoga",`The wealth houses are linked - ${dhana.length>1?'several combinations':'a combination'} for accumulation of money and assets, most active in the daśās of the grahas involved.`,
     {rule:"A lord of the 2nd (accumulated wealth) or the 11th (gains) occupies the other, is conjoined it, or is joined by a trikoṇa (5th/9th) lord",
-     chart:dhana.map(d=>d[0]).join('; '),tradition:"Dhana yogas - Bṛhat Parāśara Horā Śāstra"}]);
+     chart:dhana.map(d=>d[0]).join('; '),pis:[...new Set([l2,l11].concat(dhanaPis))],tradition:"Dhana yogas - Bṛhat Parāśara Horā Śāstra"}]);
 
   // Vipareeta Raja Yoga - Harsha / Sarala / Vimala
   const VRY={6:["Harṣa","health, resilience and victory over rivals"],8:["Sarala","longevity, courage and survival of crises"],12:["Vimala","independence, thrift and freedom from entanglement"]};
@@ -1647,7 +1777,7 @@ function detectYogas(chart){
     if([6,8,12].includes(st)&&st!==h){ const[nm,gift]=VRY[h];
       out.push([`${nm} Vipareeta Rāja Yoga`,`The ${ORD(h)} lord falls into another difficult house - the classical "reversal" yoga, where the affliction turns on itself and yields ${gift}. Results typically arrive after a struggle rather than easily.`,
         {rule:`The lord of the ${ORD(h)} occupies one of the other dusthānas (6th, 8th or 12th)`,
-         chart:`${ORD(h)} lord ${PL_SANS[lp]} in ${SIGNS[P[lp].sign]}, house ${st}`,
+         chart:`${ORD(h)} lord ${PL_SANS[lp]} in ${SIGNS[P[lp].sign]}, house ${st}`,pis:[lp],
          tradition:"Vipareeta Rāja yogas - Phaladīpikā / Jātaka Pārijāta"}]);
     }});
 
@@ -1666,7 +1796,7 @@ function detectYogas(chart){
     if(!reasons.length)return;
     out.push([`Nīcha-bhaṅga Rāja Yoga (${PL_SANS[p.i]})`,`${p.name} is debilitated, but the fall is cancelled - the classical reading is a rise from a low or difficult start, often more marked than a plain well-placed graha would give.`,
       {rule:"A debilitated graha's fall is cancelled (nīcha-bhaṅga) when the lord of its sign of debilitation, or the graha exalted in that sign, stands in a kendra from the Lagna or the Moon, or is conjoined it",
-       chart:`${p.name} debilitated in ${SIGNS[p.sign]} (house ${p.house}); ${reasons.join('; and ')}`,
+       chart:`${p.name} debilitated in ${SIGNS[p.sign]} (house ${p.house}); ${reasons.join('; and ')}`,pis:[p.i,disp],
        tradition:"Nīcha-bhaṅga - Bṛhat Parāśara Horā Śāstra / Phaladīpikā"}]);
   });
 
@@ -1676,8 +1806,29 @@ function detectYogas(chart){
   for(let i=0;i<7;i++){ const x=norm360(P[i].lon-rl); if(side===null)side=x<180; else if((x<180)!==side){allBetween=false;break;} }
   if(allBetween) out.push(["Kāla-Sarpa Yoga","All seven planets fall on one side of the Rahu-Ketu axis - intensifies the life's karmic themes; effects vary by house.",
     {rule:"All seven grahas (Sun to Saturn) lie within the 180° arc on one side of the Rāhu-Ketu axis",
-     chart:`Rāhu at ${dm(rl)}, Ketu at ${dm(kl)}; no graha falls on the opposite side`,
+     chart:`Rāhu at ${dm(rl)}, Ketu at ${dm(kl)}; no graha falls on the opposite side`,pis:[7,8],
      tradition:"Later tradition - popular in modern practice, not found in the classical Parāśari corpus"}]);
+
+  /* Parts 3 and 4 of the contract, computed once for every yoga that fired.
+     A yoga is only as good as the grahas that form it, and it delivers in their
+     daśā - so both come from the same `pis` list the test itself recorded.
+     Kemadruma and Kāla-Sarpa are cautions, so a well-placed set of grahas makes
+     the caution *weaker*, not stronger; their grade is inverted. */
+  const vim=vimshottari(P[1].lon,chart.jd);
+  const INVERT=["Kemadruma","Kāla-Sarpa"];
+  out.forEach(y=>{
+    const w=y[2]; if(!w||!w.pis||!w.pis.length)return;
+    const pis=[...new Set(w.pis.filter(i=>i!=null&&i>=0&&i<=8))];
+    const g=gradeIndication(chart,pis.filter(i=>i<=6));
+    if(INVERT.some(k=>y[0].startsWith(k))){
+      const flip={strong:"weak",weak:"strong",moderate:"moderate"};
+      const dir=g.level==="strong"?" - the caution reads lighter because the grahas forming it are themselves well placed"
+        :g.level==="weak"?" - the caution reads heavier because the grahas forming it are themselves poorly placed":"";
+      w.confidence={level:flip[g.level],basis:g.basis+dir};
+    } else w.confidence={level:g.level,basis:g.basis};
+    const win=activationWindow(pis,vim,chart.timeUnknown);
+    if(win)w.window=win;
+  });
   return out;
 }
 
@@ -1685,8 +1836,10 @@ function detectYogas(chart){
 window.JATHAKA={buildChart,buildVarga,vimshottari,pratyantardashas,yoginiDasha,charaKarakas,ashtakavarga,detectYogas,
   SIGNS,SIGN_SHORT,SIGN_SANS,NAK,PLANETS,PL_SANS,PL_GLYPH,SIGN_LORD,dms,dm,dm2:dm,nakOf,signOf,ayanamsa,julday,norm360,
   // internals for extended sections (engine2):
+  gradeIndication,activationWindow,grahaScore,jdToDate,dateToJD,
   _:{sidLon,meanNodeSid,lagna,meanObliq,vargaSign,dignity,EXALT,COMBUST,
-     VIM_LORDS,VIM_SEQ,VIM_YEARS,YOGINI,unwrapDelta,speed,julday,A}};
+     VIM_LORDS,VIM_SEQ,VIM_YEARS,YOGINI,unwrapDelta,speed,julday,A,
+     KENDRA,TRIKONA,DUSTHANA}};
 </script>
 <script>/* ================================================================
    JĀTHAKA ENGINE - extended sections (panchanga, jaimini, shadbala,
@@ -1953,14 +2106,14 @@ function doshas(chart){
     detail:manglik?`Mars sits ${refs}.${marsOwnEx?" Softened - Mars in its own/exalted sign.":(!fromL&&!fromM)?" Mild - a Venus-reckoned form, mainly for matching.":" Match with a chart that also carries it; Hanuman worship."}`:"Mars avoids the Manglik houses (1,2,4,7,8,12) from Lagna, Moon and Venus.",
     why:{rule:"Mars occupies the 1st, 2nd, 4th, 7th, 8th or 12th counted from the Lagna, the Moon or Venus"+(marsOwnEx?"; cancelled or softened when Mars is in its own sign or exaltation":""),
       chart:`Mars in ${J.SIGNS[P[2].sign]} - ${marsH}th from Lagna, ${marsFromMoon}th from Moon, ${marsFromVenus}th from Venus`+(marsOwnEx?"; Mars is in its own/exalted sign":""),
-      tradition:"Kuja dosha - classical matching (melāpaka) tradition"}});
+      pis:[2],present:manglik,soft:marsOwnEx,tradition:"Kuja dosha - classical matching (melāpaka) tradition"}});
   // Pitru: Sun/Moon with Rahu/Ketu, or Sun+Saturn afflicted
   const pitru=P[1].sign===P[8].sign||P[1].sign===P[7].sign||P[0].sign===P[8].sign||P[0].sign===P[7].sign;
   out.push({name:"Pitru Dosha",status:pitru?"Present":"Absent",
     detail:pitru?"Luminary conjunct a node - an ancestral-karma signature; remedy: Tarpana / Shraddha.":"No node-luminary affliction of the classic type.",
     why:{rule:"The Sun or the Moon shares a sign with Rāhu or Ketu",
       chart:`Sun in ${J.SIGNS[P[0].sign]}, Moon in ${J.SIGNS[P[1].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`,
-      tradition:"Ancestral-karma reading - traditional practice rather than a single canonical text"}});
+      pis:[P[1].sign===P[8].sign||P[0].sign===P[8].sign?8:7,P[0].sign===P[7].sign||P[0].sign===P[8].sign?0:1],present:pitru,tradition:"Ancestral-karma reading - traditional practice rather than a single canonical text"}});
   // Guru Chandala - Jupiter with a node. Rahu gives the classic form; Ketu is the milder Ketu-Guru variant.
   const gcNode=P[4].sign===P[7].sign?7:P[4].sign===P[8].sign?8:null;
   const gcJupStrong=P[4].dig&&(P[4].dig.cls==='own'||P[4].dig.cls==='exalt');
@@ -1969,14 +2122,14 @@ function doshas(chart){
       :`Jupiter is with ${gcNode===7?'Rāhu':'Ketu'} in ${J.SIGNS[P[4].sign]}. Classically read as unconventional wisdom - brilliance and rapid learning, but judgement, ethics and advice-taking need watching, and a guru's counsel may be resisted.${gcJupStrong?" Softened - Jupiter holds its own sign or exaltation and keeps its dignity.":""} Remedy: Guru worship, Thursday fast, Bṛhaspati mantra.`,
     why:{rule:"Jupiter (guru) shares a sign with Rāhu or Ketu"+(gcJupStrong?"; softened when Jupiter is in its own sign or exaltation":""),
       chart:`Jupiter in ${J.SIGNS[P[4].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`+(gcJupStrong?`; Jupiter is ${P[4].dig.label.toLowerCase()}`:''),
-      tradition:"Guru Chāṇḍāla - classical node-affliction reading (Parāśari lineage)"}});
+      pis:[4,gcNode==null?7:gcNode],present:gcNode!==null,soft:gcJupStrong,tradition:"Guru Chāṇḍāla - classical node-affliction reading (Parāśari lineage)"}});
   // Kala Sarpa
   const rl=P[7].lon; let side=null,ksp=true;
   for(let i=0;i<7;i++){const x=norm(P[i].lon-rl);if(side===null)side=x<180;else if((x<180)!==side){ksp=false;break;}}
   out.push({name:"Kala Sarpa Dosha",status:ksp?"PRESENT":"ABSENT",
     detail:ksp?"All seven planets fall on one side of the Rahu-Ketu axis.":"Planets fall on both sides of the Rahu-Ketu axis - this feared dosha does NOT apply.",
     why:{rule:"All seven grahas (Sun to Saturn) lie within the 180° arc on one side of the Rāhu-Ketu axis",
-      chart:`Rāhu at ${J.dm(P[7].lon)}, Ketu at ${J.dm(P[8].lon)} - grahas ${ksp?"all fall on one side":"fall on both sides"}`,
+      chart:`Rāhu at ${J.dm(P[7].lon)}, Ketu at ${J.dm(P[8].lon)} - grahas ${ksp?"all fall on one side":"fall on both sides"}`,pis:[7,8],present:ksp,
       tradition:"Later tradition - popular in modern practice, not found in the classical Parāśari corpus"}});
   // Kemadruma
   const around=[];for(let i=0;i<7;i++){if(i===1)continue;const d=((P[i].sign-P[1].sign)%12+12)%12+1;if(d===2||d===12)around.push(d);}
@@ -1986,16 +2139,52 @@ function doshas(chart){
   out.push({name:"Kemadruma Dosha",status:kema?"PRESENT":"Absent",
     detail:kema?(kendraOcc?"Present but cushioned by planets in a kendra from the Moon.":"No planets flank the Moon - the 'lonely Moon'."):"A planet flanks the Moon (2nd/12th) or joins it - Kemadruma is cancelled.",
     why:{rule:"No graha occupies the 2nd or the 12th from the Moon, and none is conjoined it"+(kema&&kendraOcc?"; cushioned when a graha holds a kendra from the Moon":""),
-      chart:`Moon in ${J.SIGNS[P[1].sign]}; flanking signs ${around.length?"occupied ("+around.map(d=>d+"th").join(", ")+")":"empty"}, Moon ${withMoon?"conjoined by a graha":"unconjoined"}`,
+      chart:`Moon in ${J.SIGNS[P[1].sign]}; flanking signs ${around.length?"occupied ("+around.map(d=>d+"th").join(", ")+")":"empty"}, Moon ${withMoon?"conjoined by a graha":"unconjoined"}`,pis:[1],present:kema,soft:kendraOcc,invert:true,
       tradition:"Parāśari yoga tradition"}});
   // Graha Yuddha
   let war=null;
-  for(let i=2;i<=6;i++)for(let j=i+1;j<=6;j++)if(i!==0&&arcdist(P[i].lon,P[j].lon)<1&&P[i].sign===P[j].sign)war=[PLANETS[P[i].i],PLANETS[P[j].i]];
+  for(let i=2;i<=6;i++)for(let j=i+1;j<=6;j++)if(i!==0&&arcdist(P[i].lon,P[j].lon)<1&&P[i].sign===P[j].sign)war=Object.assign([PLANETS[P[i].i],PLANETS[P[j].i]],{pis:[i,j]});
   out.push({name:"Graha Yuddha (planetary war)",status:war?"Present":"Absent",
     detail:war?`${war[0]} and ${war[1]} within 1° - a planetary war.`:"No two planets within 1° - no planetary war.",
     why:{rule:"Two of the five tārā grahas (Mars, Mercury, Jupiter, Venus, Saturn) stand within 1° of each other in the same sign",
       chart:war?`${war[0]} and ${war[1]} separated by under 1°`:"Closest pair of tārā grahas exceeds 1° of separation",
-      tradition:"Graha yuddha - classical (Sūrya Siddhānta / Parāśari) rule"}});
+      pis:war?war.pis:[],present:!!war,tradition:"Graha yuddha - classical (Sūrya Siddhānta / Parāśari) rule"}});
+
+  /* Strength and activation for each dosha (parts 3 and 4 of the contract).
+     A dosha is an affliction, so the grading runs the other way from a yoga: the
+     better placed the afflicting graha, the *weaker* the affliction reads, and a
+     met cancellation condition weakens it further. Where the condition never
+     formed there is nothing to time, so no window is offered - attaching one to
+     an absent dosha would imply a prediction that was never made. */
+  const vim=J.vimshottari(P[1].lon,chart.jd);
+  out.forEach(d=>{
+    const w=d.why; if(!w)return;
+    const pis=[...new Set((w.pis||[]).filter(i=>i!=null&&i>=0&&i<=8))];
+    if(!w.present){
+      w.confidence={level:"weak",basis:"the classical condition is not met in this chart - the dosha does not form"};
+      return;
+    }
+    const g=J.gradeIndication(chart,pis.filter(i=>i<=6));
+    const flip={strong:"weak",weak:"strong",moderate:"moderate"};
+    let level=flip[g.level];
+    if(w.soft)level=level==="strong"?"moderate":"weak";
+    /* The cap has to be re-applied after the flip: gradeIndication holds the
+       graha's condition back to moderate, but inverting it can push the
+       affliction back up to strong. Manglik and the rest are reckoned from the
+       Lagna, so with no birth time they are exactly the readings that must not
+       be stated firmly. */
+    if(chart.timeUnknown&&level==="strong")level="moderate";
+    /* Word the basis in the direction the grading actually went, so the sentence
+       never argues against the pill beside it. */
+    const dir=g.level==="strong"?" - the affliction reads lighter because the graha forming it is itself well placed"
+      :g.level==="weak"?" - the affliction reads heavier because the graha forming it is itself poorly placed":"";
+    w.confidence={level,basis:(g.basis==="no dignity or placement modifier applies"
+        ?"the condition is met, with no dignity modifier either way"
+        :g.basis+dir)
+      +(w.soft?"; a classical softening condition is met":"")};
+    const win=J.activationWindow(pis,vim,chart.timeUnknown);
+    if(win)w.window=win;
+  });
   return out;
 }
 
@@ -2154,6 +2343,70 @@ function marriageTiming(chart){
     dasha:`${PLANETS[w.md]}-${PLANETS[w.ad]}`,dt:w.dt})),
     l7,dk,kaaraka,male,spouseSign:l7d9,delayed:chosen.length&&chosen[0].startAge>30};
 }
+/* ---------------- Love vs arranged inclination ----------------
+   The classical axis is the 5th (romance, pūrva-puṇya, the self-chosen bond)
+   against the 9th (dharma, elders, the bond arranged for you), both read on the
+   7th. A tie between the 5th and 7th lords is the standard love-marriage
+   signature; Venus-Mars contact and Rāhu on the 7th push the same way, while
+   Jupiter or Saturn on the 7th and a 9th-7th tie pull toward the traditional
+   route. This is an inclination, not an event - the chart leans, it does not
+   decide, and plenty of charts lean both ways at once. */
+function marriageStyle(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l5=SIGN_LORD[(asc+4)%12], l7=SIGN_LORD[(asc+6)%12], l9=SIGN_LORD[(asc+8)%12];
+  const conj=(a,b)=>a!==b&&P[a].sign===P[b].sign;
+  const exch=(a,b)=>a!==b&&SIGN_LORD[P[a].sign]===b&&SIGN_LORD[P[b].sign]===a;
+  const asp=aspects(chart);
+  const aspects7=pi=>{const a=asp.find(x=>x.i===pi);return a&&a.aspects.includes(7);};
+  const love=[], trad=[];
+  if(conj(l5,l7))love.push(`the 5th lord ${PLANETS[l5]} and the 7th lord ${PLANETS[l7]} are conjoined in ${J.SIGNS[P[l5].sign]}`);
+  if(exch(l5,l7))love.push(`the 5th and 7th lords are in mutual exchange (parivartana)`);
+  if(P[l7].house===5)love.push(`the 7th lord ${PLANETS[l7]} occupies the 5th`);
+  if(P[l5].house===7)love.push(`the 5th lord ${PLANETS[l5]} occupies the 7th`);
+  if(conj(5,2))love.push("Venus and Mars are conjoined - the classical attraction contact");
+  if(P[7].house===7)love.push("Rāhu occupies the 7th - the unconventional or self-chosen union");
+  if(conj(5,7))love.push("Venus is conjoined Rāhu");
+  if(conj(l9,l7))trad.push(`the 9th lord ${PLANETS[l9]} and the 7th lord ${PLANETS[l7]} are conjoined - elders and dharma tied to the marriage`);
+  if(P[l7].house===9||P[l9].house===7)trad.push("the 7th and 9th are linked by placement - the match comes through family or community");
+  if(aspects7(4))trad.push("Jupiter aspects the 7th - the sanctioned, ceremonial route");
+  if(aspects7(6)||P[6].house===7)trad.push("Saturn holds or aspects the 7th - custom, caution and elder approval weigh heavily");
+  const lean=love.length>trad.length?"love":trad.length>love.length?"arranged":"balanced";
+  const pis=[...new Set([l5,l7,l9,5,2].filter(i=>i<7))];
+  return {lean,love,trad,l5,l7,l9,pis,
+    text:lean==="love"
+      ?`The chart leans toward a self-chosen (love) marriage: ${love.join('; ')}. ${trad.length?`Traditional indications are present too (${trad.join('; ')}), so a family-approved love match - the commonest real outcome of this combination - fits the chart better than either extreme.`:'Little pulls the other way.'}`
+      :lean==="arranged"
+      ?`The chart leans toward an arranged or family-introduced marriage: ${trad.join('; ')}. ${love.length?`There are love indications as well (${love.join('; ')}), so an introduction that becomes a genuine choice reads more likely than a purely formal arrangement.`:'Little pulls the other way.'}`
+      :love.length||trad.length
+      ?`Love and traditional indications are evenly matched here - ${love.join('; ')||'no clear love signature'}, against ${trad.join('; ')||'no clear traditional signature'}. Classically this is read as a match that arrives either way, with the manner mattering less than the 7th lord's own condition.`
+      :`Neither the love signature (5th-7th tie, Venus-Mars contact, Rāhu on the 7th) nor the traditional one (9th-7th tie, Jupiter or Saturn on the 7th) is present. The chart is silent on the manner of meeting, which classically means it is not a chart factor - circumstance decides it.`};
+}
+
+/* ---------------- Foreign spouse / distant match ----------------
+   Read from the 7th lord's sign type (chara and dvisvabhāva signs move; sthira
+   signs stay), any 12th-house connection - the bhāva of distant lands - and
+   Rāhu, which classically carries the foreign and the outside-the-community. */
+const CHARA=[0,3,6,9], DVISVA=[2,5,8,11];
+function foreignSpouse(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l7=SIGN_LORD[(asc+6)%12], l12=SIGN_LORD[(asc+11)%12];
+  const s7=P[l7].sign, hits=[];
+  if(CHARA.includes(s7))hits.push(`the 7th lord ${PLANETS[l7]} sits in ${J.SIGNS[s7]}, a movable (chara) sign - movement and distance in the partnership`);
+  else if(DVISVA.includes(s7))hits.push(`the 7th lord ${PLANETS[l7]} sits in ${J.SIGNS[s7]}, a dual (dvisvabhāva) sign - two worlds meeting`);
+  if(P[l7].house===12)hits.push(`the 7th lord occupies the 12th, the bhāva of distant lands`);
+  if(P[l12].house===7)hits.push(`the 12th lord ${PLANETS[l12]} occupies the 7th`);
+  if(P[7].house===7)hits.push("Rāhu occupies the 7th - classically the outsider, the foreigner, or the match outside one's own community");
+  if(P[l7].sign===P[7].sign)hits.push(`the 7th lord is conjoined Rāhu in ${J.SIGNS[P[7].sign]}`);
+  if(P[l7].house===9)hits.push("the 7th lord occupies the 9th, the bhāva of long journeys");
+  const level=hits.length>=3?"strong":hits.length===2?"moderate":hits.length===1?"weak":"none";
+  return {hits,level,l7,l12,pis:[l7,l12,7].filter(i=>i<9),
+    text:hits.length>=2
+      ?`Several indications point to a spouse from far away, another region, or a different community: ${hits.join('; ')}. Classically this is read as distance of background rather than a passport - a different language, community or state satisfies it as readily as another country.`
+      :hits.length===1
+      ?`One indication points this way - ${hits[0]}. A single factor is thin on its own; the tradition wants two or three before reading a foreign or distant match seriously.`
+      :`None of the classical foreign-match indications is present: the 7th lord is in a fixed sign, has no 12th-house connection, and is untouched by Rāhu. The chart points to a partner from a familiar background.`};
+}
+
 function careerTiming(chart){
   const P=chart.planets, asc=chart.ascSign;
   const l10=SIGN_LORD[(asc+9)%12];
@@ -2187,7 +2440,7 @@ function healthAnalysis(chart){
 /* expose */
 Object.assign(J,{panchanga,avakhada,functionalNature,aspects,avasthas,compoundRel,jaimini,ISHTA_DEV,
   upagrahas,gulika,sunEvents,moonEvents,shadbala,doshas,sadeSati,gochara,nearTerm,bhavaChalit,transitLon,ownsHouses,
-  marriageTiming,careerTiming,healthAnalysis,NAISARGIKA,REQ,
+  marriageTiming,marriageStyle,foreignSpouse,careerTiming,healthAnalysis,NAISARGIKA,REQ,
   /* raw tables the compatibility module (engine3) matches on - shared so the
      Avakhada Chakra shown in the report and the Guṇa Milan read the same data */
   AVK:{NAK_YONI,NAK_GANA,NAK_NADI,VARNA,VASHYA,NAT_FRIEND}});
@@ -2725,6 +2978,31 @@ function compatibility(chartA,chartB){
   deep.gates=gates;
   const areas=lifeAreas(groomChart,brideChart,labG,labB,kootas,deep);
 
+  /* ---- Parts 3 and 4 of the contract for the kootas and the gates ----
+     The chart-level layers and the seven life areas already carry all five parts
+     in their own markup - a strength band, the plain reading and a daśā line -
+     so nothing is added to them here; repeating it inside the disclosure would
+     just print each one twice. The kootas and the gates are the two that showed
+     a rule and a score but never how strongly it read or when it applies.
+     Neither is daśā-timed: Ashtakoota compares two Moons and stands for life, so
+     the window says exactly that rather than inventing a period. A koota's
+     strength has only one honest measure - the share of its own points it took. */
+  const NOT_TIMED="Not daśā-timed - a koota is a standing comparison of the two nativities, not an event that switches on. For when marital themes activate, see Daśā & Timing.";
+  const bandPts=r=>r>=0.85?"strong":r>=0.5?"moderate":"weak";
+  kootas.forEach(k=>{ if(!k.why)return;
+    k.why.confidence={level:bandPts(k.pts/k.max),
+      basis:`took ${k.pts} of its ${k.max} classical points, and it carries ${k.max} of the 36`};
+    k.why.window=NOT_TIMED;
+  });
+  gates.forEach(x=>{ if(!x.why)return;
+    x.why.confidence=!x.present
+      ?{level:"weak",basis:"the classical condition is not met - the dosha does not form"}
+      :x.cancelled
+        ?{level:"weak",basis:`the dosha forms, but a classical cancellation is in force (${x.exceptions.length} condition${x.exceptions.length===1?'':'s'} met)`}
+        :{level:"strong",basis:"the dosha forms and no classical cancellation condition is met"};
+    x.why.window=NOT_TIMED;
+  });
+
   /* Verdict in words, not just a number. The thresholds are the traditional ones
      and are guidelines - a total is never a pass/fail, and it is read only after
      the dosha gates. */
@@ -3110,7 +3388,7 @@ function resolveTz(tz,zone,y,mo,d,hh,mi){ // prefer the DST-aware offset when a 
 /* ======================= shareable deep link (base64, offline; NOT encrypted) ======================= */
 let lastInput=null;
 function encodeChart(i){try{return btoa(unescape(encodeURIComponent(JSON.stringify(
-  {n:i.name,d:`${i.y}-${i.mo}-${i.d}`,t:`${i.hh}:${i.mi}`,la:i.lat,lo:i.lon,tz:i.tz,g:i.gender,p:i.place}))));}catch(e){return '';}}
+  {n:i.name,d:`${i.y}-${i.mo}-${i.d}`,t:`${i.hh}:${i.mi}`,la:i.lat,lo:i.lon,tz:i.tz,g:i.gender,p:i.place,u:i.timeUnknown?1:0}))));}catch(e){return '';}}
 function decodeChart(s){try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return null;}}
 function shareUrl(i){return location.origin+location.pathname+'?c='+encodeChart(i);}
 /* a match link carries both nativities - `c` is the groom's, `m` the bride's */
@@ -3119,12 +3397,16 @@ function applyShared(o){if(!o)return false;
   const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
   $('#name').value=o.n||'';$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   $('#tob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;$('#gender').value=o.g||'na';
+  /* Carry the "time not known" flag across the link, or the recipient sees a
+     noon chart presented as though the time were real. */
+  const uk=$('#tobUnknown');if(uk){uk.checked=!!o.u;uk.dispatchEvent(new Event('change'));}
   $('#place').value=o.p||'';$('#lat').value=o.la;$('#lon').value=o.lo;$('#tz').value=o.tz;mainPlace.zone=null;
   $('#placeHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
 function applySharedPartner(o){if(!o)return false;
   const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
   $('#pName').value=o.n||'';$('#pDob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   $('#pTob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;
+  const puk=$('#pTobUnknown');if(puk){puk.checked=!!o.u;puk.dispatchEvent(new Event('change'));}
   $('#pPlace').value=o.p||'';$('#pLat').value=o.la;$('#pLon').value=o.lo;$('#pTz').value=o.tz;partnerPlace.zone=null;
   $('#pPlaceHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
 
@@ -3237,9 +3519,15 @@ function readNativity(ids,place,who,fallbackName,forcedGender){
      there. With two nativities the form is long enough that a message alone
      leaves you hunting for which box is empty. */
   const bad=(m,field)=>{const e=new Error(who?`${who}: ${m}`:m);e.field=field;throw e;};
-  const dob=$('#'+ids.dob).value, tob=$('#'+ids.tob).value;
+  /* An unknown birth time is a stated limitation, not a blocker. The chart is
+     cast for noon - the same convention the showcase uses - and every reading
+     that leans on the Lagna is held back accordingly rather than guessing. */
+  const unkEl=ids.unknown?$('#'+ids.unknown):null;
+  const timeUnknown=!!(unkEl&&unkEl.checked);
+  const dob=$('#'+ids.dob).value;
+  const tob=timeUnknown?'12:00':$('#'+ids.tob).value;
   if(!dob)bad('please enter a date of birth.',ids.dob);
-  if(!tob)bad('please enter a time of birth - the Lagna depends on it.',ids.tob);
+  if(!tob)bad('please enter a time of birth, or tick "time not known" - the Lagna depends on it.',ids.tob);
   let lat=parseFloat($('#'+ids.lat).value),lon=parseFloat($('#'+ids.lon).value),tz=parseFloat($('#'+ids.tz).value);
   if(isNaN(lat)||isNaN(lon))bad('pick a birth place, or open the manual panel and enter latitude & longitude.',ids.place);
   if(isNaN(tz))tz=5.5;
@@ -3249,7 +3537,7 @@ function readNativity(ids,place,who,fallbackName,forcedGender){
   const[y,mo,d]=dob.split('-').map(Number),[hh,mi]=tob.split(':').map(Number);
   if(!y||y<1700||y>2200)bad('please enter a birth year between 1700 and 2200 (the ephemeris range).',ids.dob);
   const rz=resolveTz(tz,place.zone,y,mo,d,hh,mi);tz=rz.tz; // DST-aware offset when a known zone is selected
-  return {y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:place.zone,
+  return {y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:place.zone,timeUnknown,
     name:$('#'+ids.name).value.trim()||fallbackName,
     gender:forcedGender||(ids.gender?$('#'+ids.gender).value:'na'),
     place:$('#'+ids.place).value.trim()||`${lat.toFixed(3)}°, ${lon.toFixed(3)}°`};
@@ -3260,8 +3548,16 @@ function castChart(input){
   const ev=J.sunEvents(chart); chart._dayBirth=ev?(chart.jd>=ev.riseJD&&chart.jd<ev.setJD):true;
   return chart;
 }
-const MAIN_IDS={dob:'dob',tob:'tob',lat:'lat',lon:'lon',tz:'tz',name:'name',gender:'gender',place:'place'};
-const PARTNER_IDS={dob:'pDob',tob:'pTob',lat:'pLat',lon:'pLon',tz:'pTz',name:'pName',place:'pPlace'};
+const MAIN_IDS={dob:'dob',tob:'tob',unknown:'tobUnknown',lat:'lat',lon:'lon',tz:'tz',name:'name',gender:'gender',place:'place'};
+const PARTNER_IDS={dob:'pDob',tob:'pTob',unknown:'pTobUnknown',lat:'pLat',lon:'pLon',tz:'pTz',name:'pName',place:'pPlace'};
+/* Grey the time box out while "not known" is ticked, so the form never looks
+   like it is still using whatever value happens to be sitting in it. */
+['tobUnknown','pTobUnknown'].forEach(id=>{
+  const box=document.getElementById(id); if(!box)return;
+  const field=document.getElementById(id==='tobUnknown'?'tob':'pTob');
+  const sync=()=>{if(field)field.disabled=box.checked;};
+  box.addEventListener('change',sync); sync();
+});
 function doCompute(){
   const err=$('#formErr');err.textContent='';
   const match=appMode==='match';
@@ -3459,6 +3755,21 @@ const prefersReduce=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
    values from THIS chart that satisfied it, and the tradition it belongs to.
    Every reading in the report is the output of a deterministic test - this is
    what makes that inspectable rather than something the reader has to trust. */
+/* The five-part contract. Every reading that fires a classical test carries the
+   same five things: (1) the rule and the text it comes from, (2) the grahas and
+   bhāvas that triggered it in THIS chart, (3) how strongly it is indicated,
+   (4) when it is most likely to activate, (5) what it means in plain words.
+   Parts 1-4 live in the disclosure below; part 5 is the reading prose the
+   disclosure hangs off, so it is not repeated inside it. Parts 3 and 4 are
+   computed per-reading by the engines from the same chart as everything else -
+   never asserted by hand, and never invented where the rule has no timing. */
+const CONF_CLS={strong:'c-strong',moderate:'c-mod',weak:'c-weak'};
+function confPill(c){
+  if(!c)return'';
+  const level=(c.level||'').toLowerCase();
+  return `<span class="conf-pill ${CONF_CLS[level]||'c-mod'}">${esc(c.level||'')}</span>`
+    +(c.basis?` <span class="conf-basis">${esc(c.basis)}</span>`:'');
+}
 function whyBlock(w){
   if(!w||!w.rule)return'';
   return '<details class="why-rule"><summary>'
@@ -3466,6 +3777,8 @@ function whyBlock(w){
     +'<span class="why-print">Source of this reading</span></summary>'
     +`<dl><dt>Rule</dt><dd>${esc(w.rule)}</dd>`
     +`<dt>This chart</dt><dd class="mono">${esc(w.chart)}</dd>`
+    +(w.confidence?`<dt>Strength</dt><dd>${confPill(w.confidence)}</dd>`:'')
+    +(w.window?`<dt>Activates</dt><dd>${esc(w.window)}</dd>`:'')
     +`<dt>Tradition</dt><dd>${esc(w.tradition)}</dd></dl></details>`;
 }
 /* The exported PDF carries the provenance too, so a printed chart is
@@ -3541,7 +3854,23 @@ function renderReport(chart,input){
   const luckyGem=[...new Set([lagnaLord,ninthLord].map(p=>PATTR[p].gem))];
   const luckyDir=[...new Set(favP.map(p=>PATTR[p].dir))].filter(x=>x!=='-');
   const syl=NAME_SYL[moon.nak.idx];
+  /* An unknown birth time changes what this report can honestly claim, so it is
+     said once at the top in full rather than buried in a footnote. */
+  const unknownBanner=chart.timeUnknown?`<div class="panel time-warn">
+      <div class="tw-h">Cast for 12:00 noon - the birth time was not known</div>
+      <p>Everything that does not depend on the time of day is exact: the Moon-sign and
+      nakṣatra (barring a late-day change), the planets' signs, the pañcāṅga, the yogas formed
+      by sign, and the whole of the compatibility arithmetic.</p>
+      <p>Three things are <b>provisional</b> until a verified time is entered - the
+      <b>Lagna and every house number</b> derived from it, which shift roughly one sign every
+      two hours; the <b>daśā dates</b>, because Vimśottari is set by the Moon's exact nakṣatra
+      position and the Moon covers about 13° in a day; and <b>anything cast on the house
+      cusps</b> - Bhāva Chalit, Gulika and the upagrahas.</p>
+      <p>No reading in this report is graded <b>strong</b> while the time is unknown. That is
+      the classical instruction rather than a display choice: with no time there is no Lagna,
+      and without a Lagna the houses are an assumption.</p></div>`:'';
   add('sum',secHead('sum','Janma Kuṇḍali - At a Glance')+
+    unknownBanner+
     `<div class="panel hero"><div class="eyebrow">Complete Vedic Horoscope</div>
       <div class="name">${esc(input.name)}</div>
       <div class="born">${esc(born)} · UTC${input.tz>=0?'+':''}${input.tz}${input.dst?' (DST-adjusted)':''} · ${esc(input.place)} · ${pan.vaara}, ${pan.tithi}</div>
@@ -3757,7 +4086,7 @@ function renderReport(chart,input){
 
   /* ---------- 20 DEPTH ---------- */
   add('depth',secHead('depth','Longevity · Spouse · Children - in depth')+
-    `<div class="prose">${depthReadings(chart,ck,jm,P,asc,vim,pro).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p></div>`).join('')}</div>
+    `<div class="prose">${depthReadings(chart,ck,jm,P,asc,vim,pro).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p>${whyBlock(r[2])}</div>`).join('')}</div>
     <p class="disc-inline">Longevity readings are the least certain in jyotiṣa and are offered for reflection only - never as a manner-of-death claim or medical advice.</p>`);
 
   /* ---------- 21 DIVISIONAL CHARTS ---------- */
@@ -3838,10 +4167,12 @@ function renderReport(chart,input){
 
   /* ---------- 27 VERIFICATION ---------- */
   add('verify',secHead('verify','Accuracy & Verification')+
-    `<div class="prose"><div class="read"><div class="tag">Method</div><p>All positions, nakṣatras, divisional signs, Ashtakavarga bindus, daśā dates and transit ingresses are computed on your device from the astronomy-engine ephemeris (Swiss-Ephemeris-grade) with the Lahiri (Chitrapaksha) ayanāṁśa. No internet, no AI.</p></div>
+    `<div class="prose"><div class="read"><div class="tag">Method</div><p>All positions, nakṣatras, divisional signs, Ashtakavarga bindus, daśā dates and transit ingresses are computed on your device from the astronomy-engine ephemeris (Swiss-Ephemeris-grade) with the Lahiri (Chitrapaksha) ayanāṁśa. No internet, no artificial intelligence.</p></div>
     <div class="read"><div class="tag">Ayanāṁśa check</div><p>The Lahiri ayanāṁśa at birth computes to ${J.ayanamsa(chart.jd).toFixed(4)}° - the model reproduces the Swiss Ephemeris to under 0.001 arc-second across 1900-2100.</p></div>
     <div class="read"><div class="tag">Cross-validation</div><p>This engine was validated arc-minute against pyswisseph on independent reference charts - every planet's sign, degree, nakṣatra, pada and house matched, and the Sarvashtakavarga totalled the classical 337.</p></div>
-    <div class="read"><div class="tag">Nothing is invented</div><p>No language model writes any part of this report. Every verdict is the output of a fixed classical test applied to your computed chart - the same birth details always produce the identical text, word for word. Where a reading appears in the Yogas and Doshas sections you can open <b>"why this reading?"</b> to see the exact rule that fired, the values from your chart that satisfied it, and the tradition it belongs to. Where a rule is popular in modern practice but absent from the classical corpus - Kāla-Sarpa, for instance - it says so.</p></div></div>`);
+    <div class="read"><div class="tag">Nothing is invented</div><p>No language model writes any part of this report. Every verdict is the output of a fixed classical test applied to your computed chart - the same birth details always produce the identical text, word for word. Where a rule is popular in modern practice but absent from the classical corpus - Kāla-Sarpa, for instance - it says so.</p></div>
+    <div class="read"><div class="tag">The AI in Jāthaka AI</div><p><b>AI stands for Almighty Īśvara</b>, not artificial intelligence. What is calculated here is real: your grahas are placed from a Swiss-Ephemeris-grade ephemeris, your Lagna from the true sidereal time at your birth coordinates, and your daśā dates from the Moon's exact nakṣatra position. The reading is drawn from those real positions by the rules of the śāstra - by the power of Almighty Īśvara, and not by a machine that writes astrology.</p></div>
+    <div class="read"><div class="tag">Five parts to every reading</div><p>Each reading here carries the same five things, so you can weigh it rather than take it on trust: <b>(1)</b> the classical rule it rests on and the text it comes from, <b>(2)</b> the grahas, bhāvas and nakṣatras in <i>your</i> chart that triggered it, <b>(3)</b> how strongly it reads - strong, moderate or weak, graded from planetary dignity, house placement and the quality of the yoga - <b>(4)</b> the daśā or transit window in which it is most likely to activate, and <b>(5)</b> a plain-language explanation, which is the reading itself. Parts one to four open under <b>"why this reading?"</b>; part five is the paragraph it hangs beneath. Strength and timing are computed from the same chart as everything else, and where a rule carries no timing - the kootas of a marriage match, for instance - it says so rather than inventing one.</p></div></div>`);
 
   /* ---------- 28 GLOSSARY ---------- */
   const GLOSS=[['Lagna','The rising sign/degree; the 1st house and basis of the chart.'],['Rāśi','A zodiac sign; also the Moon-sign (Janma Rāśi).'],['Nakṣatra / Pada','One of 27 lunar mansions and its quarter; the Moon\'s nakṣatra sets the daśā.'],['Bhava','An astrological house (1-12).'],['Graha','A planet (the nine: Sun…Saturn, Rahu, Ketu).'],['Exalted / Debilitated','A planet\'s sign of greatest strength / weakness.'],['Vargottama','Same sign in D-1 and D-9 - a mark of strength.'],['Combust (Asta)','A planet too close to the Sun, losing brightness.'],['Yoga','A planetary combination producing a defined result.'],['Dosha','An affliction (Manglik, Kāla-Sarpa…).'],['Vimśottari Daśā','The 120-year period timeline: Mahā → Antar → Pratyantar.'],['Ashtakavarga','A bindu (point) system scoring sign/house strength; total 337.'],['Shadbala','The six-fold mathematical strength of a planet, in rūpas.'],['Varga','A divisional/harmonic sub-chart for a life area.'],['Bhava Chalit','A chart placing planets by exact house cusps.'],['Ātmakāraka','The Jaimini soul-significator (highest-degree planet).'],['Arudha Lagna','The chart\'s "image" - how the world perceives the person.'],['Upagraha','A sensitive sub-point (e.g. Gulika/Mandi).'],['Sade-Sati','Saturn\'s ~7.5-year transit over the 12th/1st/2nd from the Moon.'],['Ayanāṁśa','The precession correction from tropical to sidereal; Lahiri is the Indian standard.']];
@@ -3853,7 +4184,7 @@ function renderReport(chart,input){
     if(g){const sh=s.querySelector('.sec-head');if(sh)sh.insertAdjacentHTML('afterend',`<div class="layman-note">${g}</div>`);}});
 
   /* footer */
-  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no artificial intelligence. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
   R.appendChild(foot);
   $('#pdfBtn').addEventListener('click',()=>window.print());
   $('#shareBtn').addEventListener('click',()=>{const url=shareUrl(lastInput||input);const b=$('#shareBtn');
@@ -4166,7 +4497,7 @@ function renderMatchReport(gChart,gInput,bChart,bInput){
     if(g){const sh=s.querySelector('.sec-head');if(sh)sh.insertAdjacentHTML('afterend',`<div class="layman-note">${g}</div>`);}});
 
   /* footer - same actions as the single-chart report, but the share link carries BOTH charts */
-  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes <b>both</b> sets of birth details in the URL (not encrypted) - think before sending it on, since it carries someone else's particulars as well as your own.</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Guṇa Milan is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes <b>both</b> sets of birth details in the URL (not encrypted) - think before sending it on, since it carries someone else's particulars as well as your own.</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no artificial intelligence. Guṇa Milan is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
   R.appendChild(foot);
   $('#pdfBtn').addEventListener('click',()=>window.print());
   $('#shareBtn').addEventListener('click',()=>{const url=shareMatchUrl(gInput,bInput);const b=$('#shareBtn');
@@ -4377,6 +4708,31 @@ function depthReadings(chart,ck,jm,P,asc,vim,pro){
   out.push(['Longevity (Āyu) - the traditional picture',`Saturn (āyuṣ-kāraka) sits in the ${ord(sat.house)}; the 8th lord ${PL[ha.l8]} and the protective aspects of Jupiter shape the picture. ${P.some(p=>p.dig&&p.dig.cls==='exalt')?'Dignified benefics lend good underlying vitality.':''} The body zones the chart flags for care are <b>${ha.areas.join('; ')}</b>${ha.windows.length?`, with the ${ha.windows.map(w=>w.dasha).join(' and ')} daśās the periods to be most mindful`:''}. Classical jyotiṣa treats the timing of death as the least certain of all readings - offered for reflection only, never as a verdict or medical claim.`]);
   const mt=J.marriageTiming(chart);
   out.push(['Spouse - in depth',`7th lord ${PL[SL[(asc+6)%12]]} in the ${ord(P[SL[(asc+6)%12]].house)}, Darakāraka ${ck[6].name}, Upapada ${SG[jm.UL]}, and the D-9 Lagna colour the marriage; the 7th lord sits in ${SG[mt.spouseSign]} in the Navāṁśa. ${mt.windows.length?`The computed likely windows (from the ${PL[mt.l7]}/Darakāraka/${mt.male?'Venus':'Jupiter'}-kāraka daśās${mt.windows.some(w=>w.dt)?', double-transit-confirmed':''}) are: ${mt.windows.map(w=>`<b>age ${w.label}</b> [${w.dasha}]`).join('; ')}.`:'Timing spreads across the partnership-lord daśās rather than one sharp window.'} Conscious effort makes the bond stable and devoted.`]);
+  /* Manner of meeting and distance of background - two readings the 7th house
+     is classically asked for and which a koota score cannot touch at all. */
+  const vimD=J.vimshottari(P[1].lon,chart.jd);
+  const ms=J.marriageStyle(chart);
+  out.push(['Love or arranged - the inclination',ms.text,
+    {rule:"A tie between the 5th lord (romance) and the 7th lord (marriage) by conjunction, exchange or mutual placement, a Venus-Mars contact, or Rāhu on the 7th, incline toward a self-chosen union; a 9th-7th tie, or Jupiter or Saturn on the 7th, incline toward a family-arranged one",
+     chart:`5th lord ${PL[ms.l5]} in the ${ord(P[ms.l5].house)}, 7th lord ${PL[ms.l7]} in the ${ord(P[ms.l7].house)}, 9th lord ${PL[ms.l9]} in the ${ord(P[ms.l9].house)} - ${ms.love.length} love indication${ms.love.length===1?'':'s'} against ${ms.trad.length} traditional`,
+     confidence:(()=>{const g=J.gradeIndication(chart,ms.pis);
+       const gap=Math.abs(ms.love.length-ms.trad.length);
+       const lvl=gap>=2?g.level:gap===1?(g.level==="strong"?"moderate":g.level):"weak";
+       return {level:chart.timeUnknown&&lvl==="strong"?"moderate":lvl,
+         basis:gap>=2?`the two sides differ by ${gap} indications, a clear lean; ${g.basis}`
+           :gap===1?`the two sides differ by only one indication, so the lean is slight; ${g.basis}`
+           :"the indications are evenly balanced, so the chart does not lean either way"};})(),
+     window:J.activationWindow(ms.pis,vimD,chart.timeUnknown),
+     tradition:"7th-bhāva reading on the 5th/9th axis - Bṛhat Parāśara Horā Śāstra and later melāpaka practice"}]);
+  const fs=J.foreignSpouse(chart);
+  out.push(['A foreign or distant match',fs.text,
+    {rule:"A foreign or distant spouse is read from the 7th lord in a movable (chara) or dual (dvisvabhāva) sign, a 7th-12th connection either way, the 7th lord in the 9th, or Rāhu on the 7th or with its lord",
+     chart:`7th lord ${PL[fs.l7]} in ${SG[P[fs.l7].sign]} (${ord(P[fs.l7].house)} bhāva), 12th lord ${PL[fs.l12]} in the ${ord(P[fs.l12].house)}, Rāhu in the ${ord(P[7].house)} - ${fs.hits.length} of the classical indications present`,
+     confidence:{level:chart.timeUnknown&&fs.level==="strong"?"moderate":(fs.level==="none"?"weak":fs.level),
+       basis:fs.hits.length?`${fs.hits.length} independent indication${fs.hits.length===1?'':'s'} point the same way`
+         :"none of the classical indications is present"},
+     window:J.activationWindow(fs.pis,vimD,chart.timeUnknown),
+     tradition:"Foreign-match indications - classical 7th/12th bhāva reading with Rāhu as the outsider-kāraka"}]);
   out.push(['Children - in depth',`Jupiter (5th kāraka) in the ${ord(P[4].house)}${P[4].dig&&P[4].dig.cls==='exalt'?', exalted in fortune':''}, with the D-7 Lagna, describes progeny. ${P[4].dig&&P[4].dig.cls==='exalt'?'About the best signature there is - capable, fortunate children.':'Supportive with Jupiter-period timing.'}`]);
   return out;
 }

@@ -263,14 +263,14 @@ function doshas(chart){
     detail:manglik?`Mars sits ${refs}.${marsOwnEx?" Softened - Mars in its own/exalted sign.":(!fromL&&!fromM)?" Mild - a Venus-reckoned form, mainly for matching.":" Match with a chart that also carries it; Hanuman worship."}`:"Mars avoids the Manglik houses (1,2,4,7,8,12) from Lagna, Moon and Venus.",
     why:{rule:"Mars occupies the 1st, 2nd, 4th, 7th, 8th or 12th counted from the Lagna, the Moon or Venus"+(marsOwnEx?"; cancelled or softened when Mars is in its own sign or exaltation":""),
       chart:`Mars in ${J.SIGNS[P[2].sign]} - ${marsH}th from Lagna, ${marsFromMoon}th from Moon, ${marsFromVenus}th from Venus`+(marsOwnEx?"; Mars is in its own/exalted sign":""),
-      tradition:"Kuja dosha - classical matching (melāpaka) tradition"}});
+      pis:[2],present:manglik,soft:marsOwnEx,tradition:"Kuja dosha - classical matching (melāpaka) tradition"}});
   // Pitru: Sun/Moon with Rahu/Ketu, or Sun+Saturn afflicted
   const pitru=P[1].sign===P[8].sign||P[1].sign===P[7].sign||P[0].sign===P[8].sign||P[0].sign===P[7].sign;
   out.push({name:"Pitru Dosha",status:pitru?"Present":"Absent",
     detail:pitru?"Luminary conjunct a node - an ancestral-karma signature; remedy: Tarpana / Shraddha.":"No node-luminary affliction of the classic type.",
     why:{rule:"The Sun or the Moon shares a sign with Rāhu or Ketu",
       chart:`Sun in ${J.SIGNS[P[0].sign]}, Moon in ${J.SIGNS[P[1].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`,
-      tradition:"Ancestral-karma reading - traditional practice rather than a single canonical text"}});
+      pis:[P[1].sign===P[8].sign||P[0].sign===P[8].sign?8:7,P[0].sign===P[7].sign||P[0].sign===P[8].sign?0:1],present:pitru,tradition:"Ancestral-karma reading - traditional practice rather than a single canonical text"}});
   // Guru Chandala - Jupiter with a node. Rahu gives the classic form; Ketu is the milder Ketu-Guru variant.
   const gcNode=P[4].sign===P[7].sign?7:P[4].sign===P[8].sign?8:null;
   const gcJupStrong=P[4].dig&&(P[4].dig.cls==='own'||P[4].dig.cls==='exalt');
@@ -279,14 +279,14 @@ function doshas(chart){
       :`Jupiter is with ${gcNode===7?'Rāhu':'Ketu'} in ${J.SIGNS[P[4].sign]}. Classically read as unconventional wisdom - brilliance and rapid learning, but judgement, ethics and advice-taking need watching, and a guru's counsel may be resisted.${gcJupStrong?" Softened - Jupiter holds its own sign or exaltation and keeps its dignity.":""} Remedy: Guru worship, Thursday fast, Bṛhaspati mantra.`,
     why:{rule:"Jupiter (guru) shares a sign with Rāhu or Ketu"+(gcJupStrong?"; softened when Jupiter is in its own sign or exaltation":""),
       chart:`Jupiter in ${J.SIGNS[P[4].sign]}, Rāhu in ${J.SIGNS[P[7].sign]}, Ketu in ${J.SIGNS[P[8].sign]}`+(gcJupStrong?`; Jupiter is ${P[4].dig.label.toLowerCase()}`:''),
-      tradition:"Guru Chāṇḍāla - classical node-affliction reading (Parāśari lineage)"}});
+      pis:[4,gcNode==null?7:gcNode],present:gcNode!==null,soft:gcJupStrong,tradition:"Guru Chāṇḍāla - classical node-affliction reading (Parāśari lineage)"}});
   // Kala Sarpa
   const rl=P[7].lon; let side=null,ksp=true;
   for(let i=0;i<7;i++){const x=norm(P[i].lon-rl);if(side===null)side=x<180;else if((x<180)!==side){ksp=false;break;}}
   out.push({name:"Kala Sarpa Dosha",status:ksp?"PRESENT":"ABSENT",
     detail:ksp?"All seven planets fall on one side of the Rahu-Ketu axis.":"Planets fall on both sides of the Rahu-Ketu axis - this feared dosha does NOT apply.",
     why:{rule:"All seven grahas (Sun to Saturn) lie within the 180° arc on one side of the Rāhu-Ketu axis",
-      chart:`Rāhu at ${J.dm(P[7].lon)}, Ketu at ${J.dm(P[8].lon)} - grahas ${ksp?"all fall on one side":"fall on both sides"}`,
+      chart:`Rāhu at ${J.dm(P[7].lon)}, Ketu at ${J.dm(P[8].lon)} - grahas ${ksp?"all fall on one side":"fall on both sides"}`,pis:[7,8],present:ksp,
       tradition:"Later tradition - popular in modern practice, not found in the classical Parāśari corpus"}});
   // Kemadruma
   const around=[];for(let i=0;i<7;i++){if(i===1)continue;const d=((P[i].sign-P[1].sign)%12+12)%12+1;if(d===2||d===12)around.push(d);}
@@ -296,16 +296,52 @@ function doshas(chart){
   out.push({name:"Kemadruma Dosha",status:kema?"PRESENT":"Absent",
     detail:kema?(kendraOcc?"Present but cushioned by planets in a kendra from the Moon.":"No planets flank the Moon - the 'lonely Moon'."):"A planet flanks the Moon (2nd/12th) or joins it - Kemadruma is cancelled.",
     why:{rule:"No graha occupies the 2nd or the 12th from the Moon, and none is conjoined it"+(kema&&kendraOcc?"; cushioned when a graha holds a kendra from the Moon":""),
-      chart:`Moon in ${J.SIGNS[P[1].sign]}; flanking signs ${around.length?"occupied ("+around.map(d=>d+"th").join(", ")+")":"empty"}, Moon ${withMoon?"conjoined by a graha":"unconjoined"}`,
+      chart:`Moon in ${J.SIGNS[P[1].sign]}; flanking signs ${around.length?"occupied ("+around.map(d=>d+"th").join(", ")+")":"empty"}, Moon ${withMoon?"conjoined by a graha":"unconjoined"}`,pis:[1],present:kema,soft:kendraOcc,invert:true,
       tradition:"Parāśari yoga tradition"}});
   // Graha Yuddha
   let war=null;
-  for(let i=2;i<=6;i++)for(let j=i+1;j<=6;j++)if(i!==0&&arcdist(P[i].lon,P[j].lon)<1&&P[i].sign===P[j].sign)war=[PLANETS[P[i].i],PLANETS[P[j].i]];
+  for(let i=2;i<=6;i++)for(let j=i+1;j<=6;j++)if(i!==0&&arcdist(P[i].lon,P[j].lon)<1&&P[i].sign===P[j].sign)war=Object.assign([PLANETS[P[i].i],PLANETS[P[j].i]],{pis:[i,j]});
   out.push({name:"Graha Yuddha (planetary war)",status:war?"Present":"Absent",
     detail:war?`${war[0]} and ${war[1]} within 1° - a planetary war.`:"No two planets within 1° - no planetary war.",
     why:{rule:"Two of the five tārā grahas (Mars, Mercury, Jupiter, Venus, Saturn) stand within 1° of each other in the same sign",
       chart:war?`${war[0]} and ${war[1]} separated by under 1°`:"Closest pair of tārā grahas exceeds 1° of separation",
-      tradition:"Graha yuddha - classical (Sūrya Siddhānta / Parāśari) rule"}});
+      pis:war?war.pis:[],present:!!war,tradition:"Graha yuddha - classical (Sūrya Siddhānta / Parāśari) rule"}});
+
+  /* Strength and activation for each dosha (parts 3 and 4 of the contract).
+     A dosha is an affliction, so the grading runs the other way from a yoga: the
+     better placed the afflicting graha, the *weaker* the affliction reads, and a
+     met cancellation condition weakens it further. Where the condition never
+     formed there is nothing to time, so no window is offered - attaching one to
+     an absent dosha would imply a prediction that was never made. */
+  const vim=J.vimshottari(P[1].lon,chart.jd);
+  out.forEach(d=>{
+    const w=d.why; if(!w)return;
+    const pis=[...new Set((w.pis||[]).filter(i=>i!=null&&i>=0&&i<=8))];
+    if(!w.present){
+      w.confidence={level:"weak",basis:"the classical condition is not met in this chart - the dosha does not form"};
+      return;
+    }
+    const g=J.gradeIndication(chart,pis.filter(i=>i<=6));
+    const flip={strong:"weak",weak:"strong",moderate:"moderate"};
+    let level=flip[g.level];
+    if(w.soft)level=level==="strong"?"moderate":"weak";
+    /* The cap has to be re-applied after the flip: gradeIndication holds the
+       graha's condition back to moderate, but inverting it can push the
+       affliction back up to strong. Manglik and the rest are reckoned from the
+       Lagna, so with no birth time they are exactly the readings that must not
+       be stated firmly. */
+    if(chart.timeUnknown&&level==="strong")level="moderate";
+    /* Word the basis in the direction the grading actually went, so the sentence
+       never argues against the pill beside it. */
+    const dir=g.level==="strong"?" - the affliction reads lighter because the graha forming it is itself well placed"
+      :g.level==="weak"?" - the affliction reads heavier because the graha forming it is itself poorly placed":"";
+    w.confidence={level,basis:(g.basis==="no dignity or placement modifier applies"
+        ?"the condition is met, with no dignity modifier either way"
+        :g.basis+dir)
+      +(w.soft?"; a classical softening condition is met":"")};
+    const win=J.activationWindow(pis,vim,chart.timeUnknown);
+    if(win)w.window=win;
+  });
   return out;
 }
 
@@ -464,6 +500,70 @@ function marriageTiming(chart){
     dasha:`${PLANETS[w.md]}-${PLANETS[w.ad]}`,dt:w.dt})),
     l7,dk,kaaraka,male,spouseSign:l7d9,delayed:chosen.length&&chosen[0].startAge>30};
 }
+/* ---------------- Love vs arranged inclination ----------------
+   The classical axis is the 5th (romance, pūrva-puṇya, the self-chosen bond)
+   against the 9th (dharma, elders, the bond arranged for you), both read on the
+   7th. A tie between the 5th and 7th lords is the standard love-marriage
+   signature; Venus-Mars contact and Rāhu on the 7th push the same way, while
+   Jupiter or Saturn on the 7th and a 9th-7th tie pull toward the traditional
+   route. This is an inclination, not an event - the chart leans, it does not
+   decide, and plenty of charts lean both ways at once. */
+function marriageStyle(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l5=SIGN_LORD[(asc+4)%12], l7=SIGN_LORD[(asc+6)%12], l9=SIGN_LORD[(asc+8)%12];
+  const conj=(a,b)=>a!==b&&P[a].sign===P[b].sign;
+  const exch=(a,b)=>a!==b&&SIGN_LORD[P[a].sign]===b&&SIGN_LORD[P[b].sign]===a;
+  const asp=aspects(chart);
+  const aspects7=pi=>{const a=asp.find(x=>x.i===pi);return a&&a.aspects.includes(7);};
+  const love=[], trad=[];
+  if(conj(l5,l7))love.push(`the 5th lord ${PLANETS[l5]} and the 7th lord ${PLANETS[l7]} are conjoined in ${J.SIGNS[P[l5].sign]}`);
+  if(exch(l5,l7))love.push(`the 5th and 7th lords are in mutual exchange (parivartana)`);
+  if(P[l7].house===5)love.push(`the 7th lord ${PLANETS[l7]} occupies the 5th`);
+  if(P[l5].house===7)love.push(`the 5th lord ${PLANETS[l5]} occupies the 7th`);
+  if(conj(5,2))love.push("Venus and Mars are conjoined - the classical attraction contact");
+  if(P[7].house===7)love.push("Rāhu occupies the 7th - the unconventional or self-chosen union");
+  if(conj(5,7))love.push("Venus is conjoined Rāhu");
+  if(conj(l9,l7))trad.push(`the 9th lord ${PLANETS[l9]} and the 7th lord ${PLANETS[l7]} are conjoined - elders and dharma tied to the marriage`);
+  if(P[l7].house===9||P[l9].house===7)trad.push("the 7th and 9th are linked by placement - the match comes through family or community");
+  if(aspects7(4))trad.push("Jupiter aspects the 7th - the sanctioned, ceremonial route");
+  if(aspects7(6)||P[6].house===7)trad.push("Saturn holds or aspects the 7th - custom, caution and elder approval weigh heavily");
+  const lean=love.length>trad.length?"love":trad.length>love.length?"arranged":"balanced";
+  const pis=[...new Set([l5,l7,l9,5,2].filter(i=>i<7))];
+  return {lean,love,trad,l5,l7,l9,pis,
+    text:lean==="love"
+      ?`The chart leans toward a self-chosen (love) marriage: ${love.join('; ')}. ${trad.length?`Traditional indications are present too (${trad.join('; ')}), so a family-approved love match - the commonest real outcome of this combination - fits the chart better than either extreme.`:'Little pulls the other way.'}`
+      :lean==="arranged"
+      ?`The chart leans toward an arranged or family-introduced marriage: ${trad.join('; ')}. ${love.length?`There are love indications as well (${love.join('; ')}), so an introduction that becomes a genuine choice reads more likely than a purely formal arrangement.`:'Little pulls the other way.'}`
+      :love.length||trad.length
+      ?`Love and traditional indications are evenly matched here - ${love.join('; ')||'no clear love signature'}, against ${trad.join('; ')||'no clear traditional signature'}. Classically this is read as a match that arrives either way, with the manner mattering less than the 7th lord's own condition.`
+      :`Neither the love signature (5th-7th tie, Venus-Mars contact, Rāhu on the 7th) nor the traditional one (9th-7th tie, Jupiter or Saturn on the 7th) is present. The chart is silent on the manner of meeting, which classically means it is not a chart factor - circumstance decides it.`};
+}
+
+/* ---------------- Foreign spouse / distant match ----------------
+   Read from the 7th lord's sign type (chara and dvisvabhāva signs move; sthira
+   signs stay), any 12th-house connection - the bhāva of distant lands - and
+   Rāhu, which classically carries the foreign and the outside-the-community. */
+const CHARA=[0,3,6,9], DVISVA=[2,5,8,11];
+function foreignSpouse(chart){
+  const P=chart.planets, asc=chart.ascSign;
+  const l7=SIGN_LORD[(asc+6)%12], l12=SIGN_LORD[(asc+11)%12];
+  const s7=P[l7].sign, hits=[];
+  if(CHARA.includes(s7))hits.push(`the 7th lord ${PLANETS[l7]} sits in ${J.SIGNS[s7]}, a movable (chara) sign - movement and distance in the partnership`);
+  else if(DVISVA.includes(s7))hits.push(`the 7th lord ${PLANETS[l7]} sits in ${J.SIGNS[s7]}, a dual (dvisvabhāva) sign - two worlds meeting`);
+  if(P[l7].house===12)hits.push(`the 7th lord occupies the 12th, the bhāva of distant lands`);
+  if(P[l12].house===7)hits.push(`the 12th lord ${PLANETS[l12]} occupies the 7th`);
+  if(P[7].house===7)hits.push("Rāhu occupies the 7th - classically the outsider, the foreigner, or the match outside one's own community");
+  if(P[l7].sign===P[7].sign)hits.push(`the 7th lord is conjoined Rāhu in ${J.SIGNS[P[7].sign]}`);
+  if(P[l7].house===9)hits.push("the 7th lord occupies the 9th, the bhāva of long journeys");
+  const level=hits.length>=3?"strong":hits.length===2?"moderate":hits.length===1?"weak":"none";
+  return {hits,level,l7,l12,pis:[l7,l12,7].filter(i=>i<9),
+    text:hits.length>=2
+      ?`Several indications point to a spouse from far away, another region, or a different community: ${hits.join('; ')}. Classically this is read as distance of background rather than a passport - a different language, community or state satisfies it as readily as another country.`
+      :hits.length===1
+      ?`One indication points this way - ${hits[0]}. A single factor is thin on its own; the tradition wants two or three before reading a foreign or distant match seriously.`
+      :`None of the classical foreign-match indications is present: the 7th lord is in a fixed sign, has no 12th-house connection, and is untouched by Rāhu. The chart points to a partner from a familiar background.`};
+}
+
 function careerTiming(chart){
   const P=chart.planets, asc=chart.ascSign;
   const l10=SIGN_LORD[(asc+9)%12];
@@ -497,7 +597,7 @@ function healthAnalysis(chart){
 /* expose */
 Object.assign(J,{panchanga,avakhada,functionalNature,aspects,avasthas,compoundRel,jaimini,ISHTA_DEV,
   upagrahas,gulika,sunEvents,moonEvents,shadbala,doshas,sadeSati,gochara,nearTerm,bhavaChalit,transitLon,ownsHouses,
-  marriageTiming,careerTiming,healthAnalysis,NAISARGIKA,REQ,
+  marriageTiming,marriageStyle,foreignSpouse,careerTiming,healthAnalysis,NAISARGIKA,REQ,
   /* raw tables the compatibility module (engine3) matches on - shared so the
      Avakhada Chakra shown in the report and the Guṇa Milan read the same data */
   AVK:{NAK_YONI,NAK_GANA,NAK_NADI,VARNA,VASHYA,NAT_FRIEND}});

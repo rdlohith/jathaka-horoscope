@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<title>Jāthaka ॐ - Vedic Horoscope & Marriage Matching | Offline Janma Kundali</title>
+<title>Jāthaka ॐ · All Mighty Īśvara - Vedic Horoscope & Marriage Matching | Offline Janma Kundali</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Cast a complete 30-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - or match two charts with the 36-point Ashtakoota Guṇa Milan. Computed entirely in your browser: Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no AI.">
+<meta name="description" content="Cast a complete 30-section Vedic janma kundali - Lagna, nakṣatra, pañcāṅga, 15 varga charts, Ashtakavarga, Vimśottari daśā and transits - or match two charts with the 36-point Ashtakoota Guṇa Milan. Computed entirely in your browser: Lahiri sidereal, Swiss-Ephemeris-grade, no internet and no artificial intelligence - the AI in Jāthaka AI is Almighty Īśvara.">
 <meta name="author" content="Jāthaka">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F3EEE3" media="(prefers-color-scheme:light)">
@@ -17,7 +17,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Jāthaka">
 <meta property="og:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
-<meta property="og:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching with the Nāḍī and Bhakūṭa cancellation rules - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta property="og:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching with the Nāḍī and Bhakūṭa cancellation rules - cast entirely in your browser. Lahiri sidereal, no internet, no artificial intelligence.">
 <meta property="og:url" content="https://rdlohith.github.io/jathaka-horoscope/">
 <meta property="og:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <meta property="og:image:width" content="1200">
@@ -25,7 +25,7 @@
 <meta property="og:image:alt" content="Jāthaka - Vedic horoscope calculator and marriage matching">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Jāthaka - Vedic Horoscope & Marriage Matching">
-<meta name="twitter:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching - cast entirely in your browser. Lahiri sidereal, no internet, no AI.">
+<meta name="twitter:description" content="A complete 30-section janma kundali, plus 36-point Ashtakoota marriage matching - cast entirely in your browser. Lahiri sidereal, no internet, no artificial intelligence.">
 <meta name="twitter:image" content="https://rdlohith.github.io/jathaka-horoscope/og.png">
 <style>
 /* ============ Brass & Indigo design system ============ */
@@ -126,6 +126,11 @@ a,button,.btn,.theme-btn,.mini-btn,.manual-toggle,.ac-item,.celeb,.chip,.jump-ar
   stroke-linecap:round;stroke-linejoin:round}
 .btn .ico{width:15px;height:15px}
 .hint{font-size:11.5px;color:var(--ink-faint)}
+/* "Time not known" - a stated limitation is worth far more than a guessed Lagna. */
+.unk{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-faint);
+  cursor:pointer;font-weight:400;letter-spacing:0}
+.unk input{width:14px;height:14px;accent-color:var(--brass);cursor:pointer;margin:0}
+input[type=time]:disabled{opacity:.45;cursor:not-allowed}
 .ac-list{position:absolute;top:100%;left:0;right:0;z-index:30;background:var(--panel);
   border:1px solid var(--line);border-radius:10px;margin-top:4px;max-height:240px;overflow:auto;
   box-shadow:var(--shadow);display:none}
@@ -370,6 +375,21 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
 .why-rule dd{margin:0;color:var(--ink-soft);line-height:1.5}
 .why-rule dd.mono{font-family:var(--mono);font-size:11.5px}
 .why-print{display:none}
+/* Strength of the indication - part 3 of the five-part contract. The colour is
+   a reading aid only; the basis text beside it is what actually justifies it. */
+.conf-pill{display:inline-block;font-family:var(--sans);font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:2px 8px;border-radius:999px;
+  border:1px solid currentColor;vertical-align:1px}
+.conf-pill.c-strong{color:#4d9a6a}
+.conf-pill.c-mod{color:var(--brass)}
+.conf-pill.c-weak{color:var(--ink-faint)}
+.conf-basis{color:var(--ink-faint);font-size:11.5px}
+/* Unknown-birth-time notice. Deliberately loud: it changes what the report claims. */
+.time-warn{border-left:3px solid var(--brass);margin-bottom:18px;padding:15px 18px}
+.time-warn .tw-h{font-family:var(--sans);font-size:11px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--brass);font-weight:700;margin-bottom:9px}
+.time-warn p{margin:0 0 8px;font-size:13.5px;line-height:1.62;color:var(--ink-soft)}
+.time-warn p:last-child{margin-bottom:0}
 @media (max-width:560px){.why-rule dl{grid-template-columns:1fr;gap:2px}
   .why-rule dt{margin-top:6px}}
 
@@ -418,6 +438,12 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
   .why-rule summary:before{display:none}
   .why-screen{display:none}
   .why-print{display:inline}
+  /* the strength pill has to stay legible in a printed report too */
+  .conf-pill{font-size:7px;padding:1px 5px;letter-spacing:.09em}
+  .conf-basis{font-size:8.5px}
+  .time-warn{break-inside:avoid;page-break-inside:avoid;padding:11px 13px;margin-bottom:12px}
+  .time-warn .tw-h{font-size:8.5px}
+  .time-warn p{font-size:9.5px;line-height:1.45;margin-bottom:5px}
   .why-rule dl{background:none;border-left:1.5px solid var(--brass);padding:4px 0 4px 9px;
     margin:3px 0 0;gap:1px 10px}
   .why-rule dt{font-size:7.5px;letter-spacing:.09em}
@@ -479,6 +505,18 @@ ul.clean li:before{content:"◆";position:absolute;left:0;color:var(--brass);fon
 .login-brand svg{width:40px;height:40px}
 .login-brand h1{font-family:var(--serif);font-size:24px}
 .login-brand .om{color:var(--brass)}
+.login-tag{font-family:var(--sans);font-size:10px;text-transform:uppercase;letter-spacing:.2em;
+  color:var(--brass);font-weight:700;text-align:center;margin:-4px 0 12px}
+.ishwara{color:var(--brass);font-weight:700;letter-spacing:.03em}
+.ishwara-panel{margin:26px 0 18px;padding:22px 24px;border-left:3px solid var(--brass)}
+.ishwara-panel .ip-h{font-family:var(--serif);font-size:20px;color:var(--brass);margin-bottom:12px}
+.ishwara-panel .ip-expand{font-family:var(--sans);font-size:11px;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--ink-faint);font-weight:600;white-space:nowrap}
+.ishwara-panel p{margin:0 0 10px;font-size:14px;line-height:1.68;color:var(--ink-soft)}
+.ishwara-panel p:last-child{margin-bottom:0}
+@media (max-width:560px){.ishwara-panel{padding:17px 16px}
+  .ishwara-panel .ip-h{font-size:17px}
+  .ishwara-panel .ip-expand{display:block;margin-top:4px;white-space:normal}}
 .login-sub{color:var(--ink-soft);font-size:13px;margin-bottom:22px}
 .auth-tabs{display:flex;gap:6px;background:var(--panel-2);border-radius:12px;padding:4px;margin-bottom:20px}
 .auth-tab{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:14px;font-weight:600;
@@ -773,6 +811,7 @@ body.show-layman .layman-note{display:block}
       </svg>
       <h1>Jāthaka <span class="om">ॐ</span></h1>
     </div>
+    <div class="login-tag">All Mighty Īśvara</div>
     <div class="login-sub">Sign in to save your charts on this device - or continue as a guest.</div>
     <div class="auth-tabs">
       <button class="auth-tab active" data-mode="signin" type="button">Sign in</button>
@@ -810,7 +849,7 @@ body.show-layman .layman-note{display:block}
       </svg>
       <div>
         <h1>Jāthaka <span class="om">ॐ</span></h1>
-        <div class="sub">Vedic horoscope calculator · Lahiri sidereal · computed offline</div>
+        <div class="sub"><b class="ishwara">All Mighty Īśvara</b> · Vedic horoscope calculator · Lahiri sidereal · computed offline</div>
       </div>
     </div>
     <div class="header-actions">
@@ -858,6 +897,7 @@ body.show-layman .layman-note{display:block}
       <div class="field">
         <label for="tob">Time of birth</label>
         <input id="tob" type="time" value="12:00" step="60">
+        <label class="unk"><input id="tobUnknown" type="checkbox"> Time not known / uncertain</label>
       </div>
       <div class="field" id="genderField">
         <label for="gender">Gender</label>
@@ -900,6 +940,7 @@ body.show-layman .layman-note{display:block}
         <div class="field">
           <label for="pTob">Time of birth</label>
           <input id="pTob" type="time" value="12:00" step="60">
+          <label class="unk"><input id="pTobUnknown" type="checkbox"> Time not known / uncertain</label>
         </div>
         <div class="field col-span">
           <label for="pPlace">Birth place</label>
@@ -953,7 +994,7 @@ body.show-layman .layman-note{display:block}
             <small>Validated arc-minute against pyswisseph (the Swiss Ephemeris) on real charts - every sign, degree, nakṣatra and pada matched.</small></li>
           <li><b>Lahiri ayanāṁśa, exact.</b> The precession correction to the sidereal zodiac reproduces the Swiss Ephemeris to under 0.001 arc-second across 1900-2100.</li>
           <li><b>Mean-node Rāhu &amp; Ketu.</b> The lunar nodes are the true astronomical points where the Moon's path crosses the ecliptic.</li>
-          <li><b>No internet, no AI, no guesswork.</b> The mathematics is deterministic - the same inputs always yield the same chart, and nothing is ever invented.</li>
+          <li><b>No internet, no artificial intelligence, no guesswork.</b> The mathematics is deterministic - the same inputs always yield the same chart, and nothing is ever invented.</li>
         </ul>
       </div>
       <div class="why-col trad">
@@ -992,6 +1033,25 @@ body.show-layman .layman-note{display:block}
           something needs a human, the report says so and names it rather than resolving it for you.</li>
       </ul>
     </div>
+    <!-- What the name means. Stated plainly and up front, because "AI" on an
+         astrology site will otherwise be read as a language model, which this
+         emphatically is not. -->
+    <div class="panel ishwara-panel">
+      <div class="ip-h">All Mighty Īśvara <span class="ip-expand">— the AI in Jāthaka AI</span></div>
+      <p><b>AI here stands for Almighty Īśvara</b>, the supreme being of the Vedic tradition - not
+      artificial intelligence. Every reading on this site is calculated by the power of Almighty
+      Īśvara, through the classical rules the ṛṣis set down and the real positions of the grahas at
+      the moment you were born.</p>
+      <p><b>And the calculation is real.</b> The Sun, Moon and planets are placed from the same
+      ephemeris astronomers use, to arc-second precision, validated against the Swiss Ephemeris. Your
+      Lagna is computed from the actual sidereal time at your exact latitude and longitude. The
+      Vimśottari daśā dates come from the Moon's true nakṣatra position. Nothing here is a template,
+      a horoscope column, or a guess dressed up as one.</p>
+      <p><b>No language model writes any of it.</b> Every sentence is the output of a fixed classical
+      test applied to your computed chart, which is why the same birth details always produce exactly
+      the same report - and why every reading opens to show you the rule it came from, the values in
+      your chart that satisfied it, how strongly it reads, and when it activates.</p>
+    </div>
     <div class="why-foot">One honest boundary: the <i>astronomy</i> here is scientifically exact and the <i>jyotiṣa method</i> is faithful to the classical tradition. Astrology's predictive claims are not established by modern science - so the readings are offered in the spirit of the tradition, for reflection and cultural insight, not as proven fact or as medical, legal or financial advice.</div>
   </section>
 
@@ -1016,7 +1076,7 @@ body.show-layman .layman-note{display:block}
       </div>
     </div>
     <div class="foot-credit"><span class="rule"></span>Powered by <b>Ayodhya Agarbatti</b><span class="rule"></span></div>
-    <p class="foot-note">Every chart on this page is computed on your own device from the astronomy-engine ephemeris - no internet, no AI, no tracking, and nothing sent to a server. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</p>
+    <p class="foot-note">Every chart on this page is computed on your own device from the astronomy-engine ephemeris - no internet, no artificial intelligence, no tracking, and nothing sent to a server. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</p>
   </div>
 </footer>
 </div><!-- /appWrap -->

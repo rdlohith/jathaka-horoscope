@@ -1,11 +1,23 @@
-# Jāthaka - Vedic Horoscope Calculator 🕉
+# Jāthaka · All Mighty Īśvara - Vedic Horoscope Calculator 🕉
 
-A single-page, **fully offline** Vedic (Jyotiṣa) calculator with **no server, no AI, and no network calls
-at runtime**. It has two modes:
+A single-page, **fully offline** Vedic (Jyotiṣa) calculator with **no server, no artificial
+intelligence, and no network calls at runtime**. It has two modes:
 
 - **Horoscope** - one birth chart in, a complete **30-section Janma Kundali** out.
 - **Marriage compatibility** - the groom's and bride's birth details in, an **8-section Ashtakoota
   (36-point) Guṇa Milan** match out.
+
+### The AI in "Jāthaka AI" is Almighty Īśvara
+
+The product name is **All Mighty Īśvara (Jāthaka AI)**, and the expansion is stated on the page
+itself wherever the initials appear. **AI here means Almighty Īśvara** - the supreme being of the
+Vedic tradition - **not artificial intelligence**. The site says so in plain words rather than
+leaving the reader to assume a language model is involved, because none is.
+
+What that framing sits on is a real calculation: grahas placed from a Swiss-Ephemeris-grade
+ephemeris to arc-second precision, a Lagna computed from true sidereal time at the birth
+coordinates, and Vimśottari daśā dates taken from the Moon's exact nakṣatra position. The reading
+is then drawn from those positions by the rules of the śāstra. See *Nothing is generated* below.
 
 **Live site:** <https://rdlohith.github.io/jathaka-horoscope/> (GitHub Pages, `main` branch, root)
 
@@ -22,9 +34,35 @@ at runtime**. It has two modes:
 - Vimśottari daśā to three levels (mahā → antar → **pratyantar**) and Yoginī daśā, Sade-Sati,
   year-by-year Gochara to 2100, near-term forecast
 - Rule-based life readings, remedies, and a branded **PDF export** (print to PDF)
-- **"Why this reading?"** - every yoga and dosha opens to show the exact classical rule that
-  fired, the values from your chart that satisfied it, and the tradition it belongs to
+- Marriage in depth: spouse profile, timing windows, **love vs arranged inclination** (5th/7th tie,
+  Venus-Mars contact and Rāhu on the 7th against a 9th-7th tie and Jupiter/Saturn on the 7th), and
+  **foreign or distant match** indications (7th lord in a chara/dvisvabhāva sign, 7th-12th
+  connection, Rāhu on the 7th or with its lord)
+- **The five-part contract** - see below
+- **Birth time unknown?** Tick the box and the chart is cast for noon with the limitation stated in
+  full at the top of the report. No reading is graded *strong* while the time is unknown, and every
+  daśā date carries the caveat that the Moon's position is uncertain by up to half a nakṣatra
 - Optional **device-local login** (accounts stored only in your browser; nothing is sent anywhere)
+
+## The five-part contract
+
+Every reading that fires a classical test carries the same five things, so a reader can weigh it
+rather than take it on trust:
+
+| # | Part | Where it appears |
+|---|---|---|
+| 1 | **Classical rule used**, and the text it comes from | `Rule` + `Tradition` in the disclosure |
+| 2 | **Planets & houses involved** - the values from *this* chart | `This chart` in the disclosure |
+| 3 | **Strength/confidence** - strong / moderate / weak | `Strength` pill in the disclosure |
+| 4 | **Applicable daśā or transit window** | `Activates` in the disclosure |
+| 5 | **Plain-language explanation** | the reading prose the disclosure hangs beneath |
+
+Parts 3 and 4 are *computed*, never asserted by hand. Strength comes from planetary dignity,
+combustion, and kendra/trikoṇa/dusthāna placement of the grahas that actually formed the yoga
+(`gradeIndication` in `src/engine.js`); the window comes from the Vimśottari periods of those same
+grahas (`activationWindow`). Doshas and cautions are graded in the opposite direction - a
+well-placed graha afflicts *less* - and where a rule carries no timing at all, such as the kootas of
+a marriage match, the report says so instead of inventing a period.
 
 ## Marriage compatibility mode - what it computes
 
@@ -57,11 +95,12 @@ under 0.001 arc-second across 1900-2100, and the engine was validated arc-minute
 
 ## Nothing is generated
 
-No language model is involved at any point. Every line of every reading is the output of a fixed
-classical test applied to the computed chart, so the same birth details always produce byte-identical
-text. In the Yogas and Doshas sections each verdict carries a **"why this reading?"** disclosure
-showing the rule, the chart values that satisfied it, and its tradition - and where a rule is popular
-in modern practice but absent from the classical corpus (Kāla-Sarpa, for instance) it says so.
+No language model is involved at any point - see *The AI in "Jāthaka AI" is Almighty Īśvara* above.
+Every line of every reading is the output of a fixed classical test applied to the computed chart, so
+the same birth details always produce byte-identical text. Each verdict carries a **"why this
+reading?"** disclosure showing the rule, the chart values that satisfied it, how strongly it reads,
+when it activates, and its tradition - and where a rule is popular in modern practice but absent from
+the classical corpus (Kāla-Sarpa, for instance) it says so.
 
 ## Build
 

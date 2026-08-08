@@ -530,6 +530,31 @@ function compatibility(chartA,chartB){
   deep.gates=gates;
   const areas=lifeAreas(groomChart,brideChart,labG,labB,kootas,deep);
 
+  /* ---- Parts 3 and 4 of the contract for the kootas and the gates ----
+     The chart-level layers and the seven life areas already carry all five parts
+     in their own markup - a strength band, the plain reading and a daśā line -
+     so nothing is added to them here; repeating it inside the disclosure would
+     just print each one twice. The kootas and the gates are the two that showed
+     a rule and a score but never how strongly it read or when it applies.
+     Neither is daśā-timed: Ashtakoota compares two Moons and stands for life, so
+     the window says exactly that rather than inventing a period. A koota's
+     strength has only one honest measure - the share of its own points it took. */
+  const NOT_TIMED="Not daśā-timed - a koota is a standing comparison of the two nativities, not an event that switches on. For when marital themes activate, see Daśā & Timing.";
+  const bandPts=r=>r>=0.85?"strong":r>=0.5?"moderate":"weak";
+  kootas.forEach(k=>{ if(!k.why)return;
+    k.why.confidence={level:bandPts(k.pts/k.max),
+      basis:`took ${k.pts} of its ${k.max} classical points, and it carries ${k.max} of the 36`};
+    k.why.window=NOT_TIMED;
+  });
+  gates.forEach(x=>{ if(!x.why)return;
+    x.why.confidence=!x.present
+      ?{level:"weak",basis:"the classical condition is not met - the dosha does not form"}
+      :x.cancelled
+        ?{level:"weak",basis:`the dosha forms, but a classical cancellation is in force (${x.exceptions.length} condition${x.exceptions.length===1?'':'s'} met)`}
+        :{level:"strong",basis:"the dosha forms and no classical cancellation condition is met"};
+    x.why.window=NOT_TIMED;
+  });
+
   /* Verdict in words, not just a number. The thresholds are the traditional ones
      and are guidelines - a total is never a pass/fail, and it is read only after
      the dosha gates. */

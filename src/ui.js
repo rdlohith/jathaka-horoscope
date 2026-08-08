@@ -330,7 +330,7 @@ function resolveTz(tz,zone,y,mo,d,hh,mi){ // prefer the DST-aware offset when a 
 /* ======================= shareable deep link (base64, offline; NOT encrypted) ======================= */
 let lastInput=null;
 function encodeChart(i){try{return btoa(unescape(encodeURIComponent(JSON.stringify(
-  {n:i.name,d:`${i.y}-${i.mo}-${i.d}`,t:`${i.hh}:${i.mi}`,la:i.lat,lo:i.lon,tz:i.tz,g:i.gender,p:i.place}))));}catch(e){return '';}}
+  {n:i.name,d:`${i.y}-${i.mo}-${i.d}`,t:`${i.hh}:${i.mi}`,la:i.lat,lo:i.lon,tz:i.tz,g:i.gender,p:i.place,u:i.timeUnknown?1:0}))));}catch(e){return '';}}
 function decodeChart(s){try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return null;}}
 function shareUrl(i){return location.origin+location.pathname+'?c='+encodeChart(i);}
 /* a match link carries both nativities - `c` is the groom's, `m` the bride's */
@@ -339,12 +339,16 @@ function applyShared(o){if(!o)return false;
   const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
   $('#name').value=o.n||'';$('#dob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   $('#tob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;$('#gender').value=o.g||'na';
+  /* Carry the "time not known" flag across the link, or the recipient sees a
+     noon chart presented as though the time were real. */
+  const uk=$('#tobUnknown');if(uk){uk.checked=!!o.u;uk.dispatchEvent(new Event('change'));}
   $('#place').value=o.p||'';$('#lat').value=o.la;$('#lon').value=o.lo;$('#tz').value=o.tz;mainPlace.zone=null;
   $('#placeHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
 function applySharedPartner(o){if(!o)return false;
   const[y,mo,d]=(o.d||'').split('-'),[hh,mi]=(o.t||'').split(':');
   $('#pName').value=o.n||'';$('#pDob').value=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   $('#pTob').value=`${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;
+  const puk=$('#pTobUnknown');if(puk){puk.checked=!!o.u;puk.dispatchEvent(new Event('change'));}
   $('#pPlace').value=o.p||'';$('#pLat').value=o.la;$('#pLon').value=o.lo;$('#pTz').value=o.tz;partnerPlace.zone=null;
   $('#pPlaceHint').textContent=`✓ ${(+o.la).toFixed(4)}°  ${(+o.lo).toFixed(4)}°  ·  UTC${o.tz>=0?'+':''}${o.tz}`;return true;}
 
@@ -457,9 +461,15 @@ function readNativity(ids,place,who,fallbackName,forcedGender){
      there. With two nativities the form is long enough that a message alone
      leaves you hunting for which box is empty. */
   const bad=(m,field)=>{const e=new Error(who?`${who}: ${m}`:m);e.field=field;throw e;};
-  const dob=$('#'+ids.dob).value, tob=$('#'+ids.tob).value;
+  /* An unknown birth time is a stated limitation, not a blocker. The chart is
+     cast for noon - the same convention the showcase uses - and every reading
+     that leans on the Lagna is held back accordingly rather than guessing. */
+  const unkEl=ids.unknown?$('#'+ids.unknown):null;
+  const timeUnknown=!!(unkEl&&unkEl.checked);
+  const dob=$('#'+ids.dob).value;
+  const tob=timeUnknown?'12:00':$('#'+ids.tob).value;
   if(!dob)bad('please enter a date of birth.',ids.dob);
-  if(!tob)bad('please enter a time of birth - the Lagna depends on it.',ids.tob);
+  if(!tob)bad('please enter a time of birth, or tick "time not known" - the Lagna depends on it.',ids.tob);
   let lat=parseFloat($('#'+ids.lat).value),lon=parseFloat($('#'+ids.lon).value),tz=parseFloat($('#'+ids.tz).value);
   if(isNaN(lat)||isNaN(lon))bad('pick a birth place, or open the manual panel and enter latitude & longitude.',ids.place);
   if(isNaN(tz))tz=5.5;
@@ -469,7 +479,7 @@ function readNativity(ids,place,who,fallbackName,forcedGender){
   const[y,mo,d]=dob.split('-').map(Number),[hh,mi]=tob.split(':').map(Number);
   if(!y||y<1700||y>2200)bad('please enter a birth year between 1700 and 2200 (the ephemeris range).',ids.dob);
   const rz=resolveTz(tz,place.zone,y,mo,d,hh,mi);tz=rz.tz; // DST-aware offset when a known zone is selected
-  return {y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:place.zone,
+  return {y,mo,d,hh,mi,lat,lon,tz,dst:rz.dst,zone:place.zone,timeUnknown,
     name:$('#'+ids.name).value.trim()||fallbackName,
     gender:forcedGender||(ids.gender?$('#'+ids.gender).value:'na'),
     place:$('#'+ids.place).value.trim()||`${lat.toFixed(3)}°, ${lon.toFixed(3)}°`};
@@ -480,8 +490,16 @@ function castChart(input){
   const ev=J.sunEvents(chart); chart._dayBirth=ev?(chart.jd>=ev.riseJD&&chart.jd<ev.setJD):true;
   return chart;
 }
-const MAIN_IDS={dob:'dob',tob:'tob',lat:'lat',lon:'lon',tz:'tz',name:'name',gender:'gender',place:'place'};
-const PARTNER_IDS={dob:'pDob',tob:'pTob',lat:'pLat',lon:'pLon',tz:'pTz',name:'pName',place:'pPlace'};
+const MAIN_IDS={dob:'dob',tob:'tob',unknown:'tobUnknown',lat:'lat',lon:'lon',tz:'tz',name:'name',gender:'gender',place:'place'};
+const PARTNER_IDS={dob:'pDob',tob:'pTob',unknown:'pTobUnknown',lat:'pLat',lon:'pLon',tz:'pTz',name:'pName',place:'pPlace'};
+/* Grey the time box out while "not known" is ticked, so the form never looks
+   like it is still using whatever value happens to be sitting in it. */
+['tobUnknown','pTobUnknown'].forEach(id=>{
+  const box=document.getElementById(id); if(!box)return;
+  const field=document.getElementById(id==='tobUnknown'?'tob':'pTob');
+  const sync=()=>{if(field)field.disabled=box.checked;};
+  box.addEventListener('change',sync); sync();
+});
 function doCompute(){
   const err=$('#formErr');err.textContent='';
   const match=appMode==='match';
@@ -679,6 +697,21 @@ const prefersReduce=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
    values from THIS chart that satisfied it, and the tradition it belongs to.
    Every reading in the report is the output of a deterministic test - this is
    what makes that inspectable rather than something the reader has to trust. */
+/* The five-part contract. Every reading that fires a classical test carries the
+   same five things: (1) the rule and the text it comes from, (2) the grahas and
+   bhāvas that triggered it in THIS chart, (3) how strongly it is indicated,
+   (4) when it is most likely to activate, (5) what it means in plain words.
+   Parts 1-4 live in the disclosure below; part 5 is the reading prose the
+   disclosure hangs off, so it is not repeated inside it. Parts 3 and 4 are
+   computed per-reading by the engines from the same chart as everything else -
+   never asserted by hand, and never invented where the rule has no timing. */
+const CONF_CLS={strong:'c-strong',moderate:'c-mod',weak:'c-weak'};
+function confPill(c){
+  if(!c)return'';
+  const level=(c.level||'').toLowerCase();
+  return `<span class="conf-pill ${CONF_CLS[level]||'c-mod'}">${esc(c.level||'')}</span>`
+    +(c.basis?` <span class="conf-basis">${esc(c.basis)}</span>`:'');
+}
 function whyBlock(w){
   if(!w||!w.rule)return'';
   return '<details class="why-rule"><summary>'
@@ -686,6 +719,8 @@ function whyBlock(w){
     +'<span class="why-print">Source of this reading</span></summary>'
     +`<dl><dt>Rule</dt><dd>${esc(w.rule)}</dd>`
     +`<dt>This chart</dt><dd class="mono">${esc(w.chart)}</dd>`
+    +(w.confidence?`<dt>Strength</dt><dd>${confPill(w.confidence)}</dd>`:'')
+    +(w.window?`<dt>Activates</dt><dd>${esc(w.window)}</dd>`:'')
     +`<dt>Tradition</dt><dd>${esc(w.tradition)}</dd></dl></details>`;
 }
 /* The exported PDF carries the provenance too, so a printed chart is
@@ -761,7 +796,23 @@ function renderReport(chart,input){
   const luckyGem=[...new Set([lagnaLord,ninthLord].map(p=>PATTR[p].gem))];
   const luckyDir=[...new Set(favP.map(p=>PATTR[p].dir))].filter(x=>x!=='-');
   const syl=NAME_SYL[moon.nak.idx];
+  /* An unknown birth time changes what this report can honestly claim, so it is
+     said once at the top in full rather than buried in a footnote. */
+  const unknownBanner=chart.timeUnknown?`<div class="panel time-warn">
+      <div class="tw-h">Cast for 12:00 noon - the birth time was not known</div>
+      <p>Everything that does not depend on the time of day is exact: the Moon-sign and
+      nakṣatra (barring a late-day change), the planets' signs, the pañcāṅga, the yogas formed
+      by sign, and the whole of the compatibility arithmetic.</p>
+      <p>Three things are <b>provisional</b> until a verified time is entered - the
+      <b>Lagna and every house number</b> derived from it, which shift roughly one sign every
+      two hours; the <b>daśā dates</b>, because Vimśottari is set by the Moon's exact nakṣatra
+      position and the Moon covers about 13° in a day; and <b>anything cast on the house
+      cusps</b> - Bhāva Chalit, Gulika and the upagrahas.</p>
+      <p>No reading in this report is graded <b>strong</b> while the time is unknown. That is
+      the classical instruction rather than a display choice: with no time there is no Lagna,
+      and without a Lagna the houses are an assumption.</p></div>`:'';
   add('sum',secHead('sum','Janma Kuṇḍali - At a Glance')+
+    unknownBanner+
     `<div class="panel hero"><div class="eyebrow">Complete Vedic Horoscope</div>
       <div class="name">${esc(input.name)}</div>
       <div class="born">${esc(born)} · UTC${input.tz>=0?'+':''}${input.tz}${input.dst?' (DST-adjusted)':''} · ${esc(input.place)} · ${pan.vaara}, ${pan.tithi}</div>
@@ -977,7 +1028,7 @@ function renderReport(chart,input){
 
   /* ---------- 20 DEPTH ---------- */
   add('depth',secHead('depth','Longevity · Spouse · Children - in depth')+
-    `<div class="prose">${depthReadings(chart,ck,jm,P,asc,vim,pro).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p></div>`).join('')}</div>
+    `<div class="prose">${depthReadings(chart,ck,jm,P,asc,vim,pro).map(r=>`<div class="read"><div class="tag">${r[0]}</div><p>${r[1]}</p>${whyBlock(r[2])}</div>`).join('')}</div>
     <p class="disc-inline">Longevity readings are the least certain in jyotiṣa and are offered for reflection only - never as a manner-of-death claim or medical advice.</p>`);
 
   /* ---------- 21 DIVISIONAL CHARTS ---------- */
@@ -1058,10 +1109,12 @@ function renderReport(chart,input){
 
   /* ---------- 27 VERIFICATION ---------- */
   add('verify',secHead('verify','Accuracy & Verification')+
-    `<div class="prose"><div class="read"><div class="tag">Method</div><p>All positions, nakṣatras, divisional signs, Ashtakavarga bindus, daśā dates and transit ingresses are computed on your device from the astronomy-engine ephemeris (Swiss-Ephemeris-grade) with the Lahiri (Chitrapaksha) ayanāṁśa. No internet, no AI.</p></div>
+    `<div class="prose"><div class="read"><div class="tag">Method</div><p>All positions, nakṣatras, divisional signs, Ashtakavarga bindus, daśā dates and transit ingresses are computed on your device from the astronomy-engine ephemeris (Swiss-Ephemeris-grade) with the Lahiri (Chitrapaksha) ayanāṁśa. No internet, no artificial intelligence.</p></div>
     <div class="read"><div class="tag">Ayanāṁśa check</div><p>The Lahiri ayanāṁśa at birth computes to ${J.ayanamsa(chart.jd).toFixed(4)}° - the model reproduces the Swiss Ephemeris to under 0.001 arc-second across 1900-2100.</p></div>
     <div class="read"><div class="tag">Cross-validation</div><p>This engine was validated arc-minute against pyswisseph on independent reference charts - every planet's sign, degree, nakṣatra, pada and house matched, and the Sarvashtakavarga totalled the classical 337.</p></div>
-    <div class="read"><div class="tag">Nothing is invented</div><p>No language model writes any part of this report. Every verdict is the output of a fixed classical test applied to your computed chart - the same birth details always produce the identical text, word for word. Where a reading appears in the Yogas and Doshas sections you can open <b>"why this reading?"</b> to see the exact rule that fired, the values from your chart that satisfied it, and the tradition it belongs to. Where a rule is popular in modern practice but absent from the classical corpus - Kāla-Sarpa, for instance - it says so.</p></div></div>`);
+    <div class="read"><div class="tag">Nothing is invented</div><p>No language model writes any part of this report. Every verdict is the output of a fixed classical test applied to your computed chart - the same birth details always produce the identical text, word for word. Where a rule is popular in modern practice but absent from the classical corpus - Kāla-Sarpa, for instance - it says so.</p></div>
+    <div class="read"><div class="tag">The AI in Jāthaka AI</div><p><b>AI stands for Almighty Īśvara</b>, not artificial intelligence. What is calculated here is real: your grahas are placed from a Swiss-Ephemeris-grade ephemeris, your Lagna from the true sidereal time at your birth coordinates, and your daśā dates from the Moon's exact nakṣatra position. The reading is drawn from those real positions by the rules of the śāstra - by the power of Almighty Īśvara, and not by a machine that writes astrology.</p></div>
+    <div class="read"><div class="tag">Five parts to every reading</div><p>Each reading here carries the same five things, so you can weigh it rather than take it on trust: <b>(1)</b> the classical rule it rests on and the text it comes from, <b>(2)</b> the grahas, bhāvas and nakṣatras in <i>your</i> chart that triggered it, <b>(3)</b> how strongly it reads - strong, moderate or weak, graded from planetary dignity, house placement and the quality of the yoga - <b>(4)</b> the daśā or transit window in which it is most likely to activate, and <b>(5)</b> a plain-language explanation, which is the reading itself. Parts one to four open under <b>"why this reading?"</b>; part five is the paragraph it hangs beneath. Strength and timing are computed from the same chart as everything else, and where a rule carries no timing - the kootas of a marriage match, for instance - it says so rather than inventing one.</p></div></div>`);
 
   /* ---------- 28 GLOSSARY ---------- */
   const GLOSS=[['Lagna','The rising sign/degree; the 1st house and basis of the chart.'],['Rāśi','A zodiac sign; also the Moon-sign (Janma Rāśi).'],['Nakṣatra / Pada','One of 27 lunar mansions and its quarter; the Moon\'s nakṣatra sets the daśā.'],['Bhava','An astrological house (1-12).'],['Graha','A planet (the nine: Sun…Saturn, Rahu, Ketu).'],['Exalted / Debilitated','A planet\'s sign of greatest strength / weakness.'],['Vargottama','Same sign in D-1 and D-9 - a mark of strength.'],['Combust (Asta)','A planet too close to the Sun, losing brightness.'],['Yoga','A planetary combination producing a defined result.'],['Dosha','An affliction (Manglik, Kāla-Sarpa…).'],['Vimśottari Daśā','The 120-year period timeline: Mahā → Antar → Pratyantar.'],['Ashtakavarga','A bindu (point) system scoring sign/house strength; total 337.'],['Shadbala','The six-fold mathematical strength of a planet, in rūpas.'],['Varga','A divisional/harmonic sub-chart for a life area.'],['Bhava Chalit','A chart placing planets by exact house cusps.'],['Ātmakāraka','The Jaimini soul-significator (highest-degree planet).'],['Arudha Lagna','The chart\'s "image" - how the world perceives the person.'],['Upagraha','A sensitive sub-point (e.g. Gulika/Mandi).'],['Sade-Sati','Saturn\'s ~7.5-year transit over the 12th/1st/2nd from the Moon.'],['Ayanāṁśa','The precession correction from tropical to sidereal; Lahiri is the Indian standard.']];
@@ -1073,7 +1126,7 @@ function renderReport(chart,input){
     if(g){const sh=s.querySelector('.sec-head');if(sh)sh.insertAdjacentHTML('afterend',`<div class="layman-note">${g}</div>`);}});
 
   /* footer */
-  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes the birth details in the URL (not encrypted).</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no artificial intelligence. Vedic astrology is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
   R.appendChild(foot);
   $('#pdfBtn').addEventListener('click',()=>window.print());
   $('#shareBtn').addEventListener('click',()=>{const url=shareUrl(lastInput||input);const b=$('#shareBtn');
@@ -1386,7 +1439,7 @@ function renderMatchReport(gChart,gInput,bChart,bInput){
     if(g){const sh=s.querySelector('.sec-head');if(sh)sh.insertAdjacentHTML('afterend',`<div class="layman-note">${g}</div>`);}});
 
   /* footer - same actions as the single-chart report, but the share link carries BOTH charts */
-  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes <b>both</b> sets of birth details in the URL (not encrypted) - think before sending it on, since it carries someone else's particulars as well as your own.</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no AI. Guṇa Milan is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
+  const foot=el('div');foot.innerHTML=`<div class="footer-actions"><button class="btn btn-primary" id="pdfBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg><span class="lbl">Download PDF</span></button><button class="btn btn-ghost" id="shareBtn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9.5" y="9.5" width="10.5" height="10.5" rx="2.5"/><path d="M6.5 14.5h-1a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy shareable link</span></button><button class="btn btn-ghost" id="editBtn" type="button">Edit birth details</button></div><p class="hint screen-only" style="text-align:center;margin:-8px 0 0">In the print dialog choose <b>Save as PDF</b>, and keep <b>Background graphics</b> on to preserve the full colour design. The shareable link encodes <b>both</b> sets of birth details in the URL (not encrypted) - think before sending it on, since it carries someone else's particulars as well as your own.</p><div class="disc">Computed entirely on your device with astronomy-engine (Swiss-Ephemeris-grade) and a Lahiri sidereal model validated to the arc-minute. No internet, no artificial intelligence. Guṇa Milan is a traditional interpretive system offered for reflection and cultural interest - not prediction, and not medical, legal or financial advice.</div>`;
   R.appendChild(foot);
   $('#pdfBtn').addEventListener('click',()=>window.print());
   $('#shareBtn').addEventListener('click',()=>{const url=shareMatchUrl(gInput,bInput);const b=$('#shareBtn');
@@ -1597,6 +1650,31 @@ function depthReadings(chart,ck,jm,P,asc,vim,pro){
   out.push(['Longevity (Āyu) - the traditional picture',`Saturn (āyuṣ-kāraka) sits in the ${ord(sat.house)}; the 8th lord ${PL[ha.l8]} and the protective aspects of Jupiter shape the picture. ${P.some(p=>p.dig&&p.dig.cls==='exalt')?'Dignified benefics lend good underlying vitality.':''} The body zones the chart flags for care are <b>${ha.areas.join('; ')}</b>${ha.windows.length?`, with the ${ha.windows.map(w=>w.dasha).join(' and ')} daśās the periods to be most mindful`:''}. Classical jyotiṣa treats the timing of death as the least certain of all readings - offered for reflection only, never as a verdict or medical claim.`]);
   const mt=J.marriageTiming(chart);
   out.push(['Spouse - in depth',`7th lord ${PL[SL[(asc+6)%12]]} in the ${ord(P[SL[(asc+6)%12]].house)}, Darakāraka ${ck[6].name}, Upapada ${SG[jm.UL]}, and the D-9 Lagna colour the marriage; the 7th lord sits in ${SG[mt.spouseSign]} in the Navāṁśa. ${mt.windows.length?`The computed likely windows (from the ${PL[mt.l7]}/Darakāraka/${mt.male?'Venus':'Jupiter'}-kāraka daśās${mt.windows.some(w=>w.dt)?', double-transit-confirmed':''}) are: ${mt.windows.map(w=>`<b>age ${w.label}</b> [${w.dasha}]`).join('; ')}.`:'Timing spreads across the partnership-lord daśās rather than one sharp window.'} Conscious effort makes the bond stable and devoted.`]);
+  /* Manner of meeting and distance of background - two readings the 7th house
+     is classically asked for and which a koota score cannot touch at all. */
+  const vimD=J.vimshottari(P[1].lon,chart.jd);
+  const ms=J.marriageStyle(chart);
+  out.push(['Love or arranged - the inclination',ms.text,
+    {rule:"A tie between the 5th lord (romance) and the 7th lord (marriage) by conjunction, exchange or mutual placement, a Venus-Mars contact, or Rāhu on the 7th, incline toward a self-chosen union; a 9th-7th tie, or Jupiter or Saturn on the 7th, incline toward a family-arranged one",
+     chart:`5th lord ${PL[ms.l5]} in the ${ord(P[ms.l5].house)}, 7th lord ${PL[ms.l7]} in the ${ord(P[ms.l7].house)}, 9th lord ${PL[ms.l9]} in the ${ord(P[ms.l9].house)} - ${ms.love.length} love indication${ms.love.length===1?'':'s'} against ${ms.trad.length} traditional`,
+     confidence:(()=>{const g=J.gradeIndication(chart,ms.pis);
+       const gap=Math.abs(ms.love.length-ms.trad.length);
+       const lvl=gap>=2?g.level:gap===1?(g.level==="strong"?"moderate":g.level):"weak";
+       return {level:chart.timeUnknown&&lvl==="strong"?"moderate":lvl,
+         basis:gap>=2?`the two sides differ by ${gap} indications, a clear lean; ${g.basis}`
+           :gap===1?`the two sides differ by only one indication, so the lean is slight; ${g.basis}`
+           :"the indications are evenly balanced, so the chart does not lean either way"};})(),
+     window:J.activationWindow(ms.pis,vimD,chart.timeUnknown),
+     tradition:"7th-bhāva reading on the 5th/9th axis - Bṛhat Parāśara Horā Śāstra and later melāpaka practice"}]);
+  const fs=J.foreignSpouse(chart);
+  out.push(['A foreign or distant match',fs.text,
+    {rule:"A foreign or distant spouse is read from the 7th lord in a movable (chara) or dual (dvisvabhāva) sign, a 7th-12th connection either way, the 7th lord in the 9th, or Rāhu on the 7th or with its lord",
+     chart:`7th lord ${PL[fs.l7]} in ${SG[P[fs.l7].sign]} (${ord(P[fs.l7].house)} bhāva), 12th lord ${PL[fs.l12]} in the ${ord(P[fs.l12].house)}, Rāhu in the ${ord(P[7].house)} - ${fs.hits.length} of the classical indications present`,
+     confidence:{level:chart.timeUnknown&&fs.level==="strong"?"moderate":(fs.level==="none"?"weak":fs.level),
+       basis:fs.hits.length?`${fs.hits.length} independent indication${fs.hits.length===1?'':'s'} point the same way`
+         :"none of the classical indications is present"},
+     window:J.activationWindow(fs.pis,vimD,chart.timeUnknown),
+     tradition:"Foreign-match indications - classical 7th/12th bhāva reading with Rāhu as the outsider-kāraka"}]);
   out.push(['Children - in depth',`Jupiter (5th kāraka) in the ${ord(P[4].house)}${P[4].dig&&P[4].dig.cls==='exalt'?', exalted in fortune':''}, with the D-7 Lagna, describes progeny. ${P[4].dig&&P[4].dig.cls==='exalt'?'About the best signature there is - capable, fortunate children.':'Supportive with Jupiter-period timing.'}`]);
   return out;
 }
